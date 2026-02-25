@@ -76,6 +76,8 @@ function logoutFirebase() {
 let theme = localStorage.getItem('nexus_theme') || 'light';
 let currentBg = localStorage.getItem('nexus_bg') || 'default';
 
+let priorityChartInstance = null;
+
 let allBoardsData = {};
 let boards = [];
 let currentBoardId = null;
@@ -1344,103 +1346,71 @@ document.getElementById('statsOverlay').addEventListener('click', (e) => {
 });
 
 function renderCharts() {
+    const today = getTodayString();
+    const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
+
+    const stats = {
+        total: tasks.length,
+        done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length,
+        late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length,
+        priority: { Alta: 0, Média: 0, Baixa: 0 }
+    };
+
     const tagCounts = {};
-    tags.forEach(t => {
-        tagCounts[t] = 0;
-    });
+    tags.forEach(t => tagCounts[t] = 0);
 
     tasks.forEach(t => {
-        if (tagCounts[t.tag] !== undefined) {
-            tagCounts[t.tag]++;
-        } else {
-            tagCounts[t.tag] = 1;
-        }
+        if (tagCounts[t.tag] !== undefined) tagCounts[t.tag]++;
+        if (stats.priority[t.priority] !== undefined) stats.priority[t.priority]++;
     });
 
-    const labels = [];
-    const dataStatus = [];
-
-    columns.forEach(col => {
-        labels.push(col.title);
-        dataStatus.push(tasks.filter(t => t.status === col.id).length);
-    });
+    document.getElementById('kpi-total').innerText = stats.total;
+    document.getElementById('kpi-done').innerText = stats.done;
+    document.getElementById('kpi-late').innerText = stats.late;
+    document.getElementById('kpi-avg').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%';
 
     const textColor = theme === 'dark' ? '#e6edf3' : '#18181b';
-    const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#64748b'];
+    const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
 
-    if (tagsChartInstance) {
-        tagsChartInstance.destroy();
-    }
-
-    const ctxTags = document.getElementById('tagsChart').getContext('2d');
-    tagsChartInstance = new Chart(ctxTags, {
+    if (tagsChartInstance) tagsChartInstance.destroy();
+    tagsChartInstance = new Chart(document.getElementById('tagsChart'), {
         type: 'doughnut',
         data: {
             labels: Object.keys(tagCounts),
-            datasets: [{
-                data: Object.values(tagCounts),
-                backgroundColor: chartColors,
-                borderWidth: 0
-            }]
+            datasets: [{ data: Object.values(tagCounts), backgroundColor: chartColors, borderWidth: 0 }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        color: textColor,
-                        font: { size: 10 }
-                    }
-                }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } } }
     });
 
-    if (statusChartInstance) {
-        statusChartInstance.destroy();
-    }
-
-    const ctxStatus = document.getElementById('statusChart').getContext('2d');
-    statusChartInstance = new Chart(ctxStatus, {
+    if (statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(document.getElementById('statusChart'), {
         type: 'bar',
         data: {
-            labels: labels,
-            datasets: [{
-                label: 'Qtd',
-                data: dataStatus,
-                backgroundColor: '#3b82f6',
-                borderRadius: 5
-            }]
+            labels: columns.map(c => c.title),
+            datasets: [{ label: 'Tarefas', data: columns.map(c => tasks.filter(t => t.status === c.id).length), backgroundColor: '#3b82f6', borderRadius: 5 }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: textColor }
-                },
-                x: {
-                    ticks: { color: textColor }
-                }
-            },
-            plugins: {
-                legend: { display: false }
-            }
+            scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } },
+            plugins: { legend: { display: false } }
         }
     });
 
-    const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
-
-    let completionPct = 0;
-    if (tasks.length !== 0) {
-        const doneCount = doneCol ? tasks.filter(t => t.status === doneCol.id).length : 0;
-        completionPct = Math.round((doneCount / tasks.length) * 100);
-    }
-
-    document.getElementById('statsSummary').innerHTML = `<strong>Total:</strong> ${tasks.length} tarefas. <strong>Concluído:</strong> ${completionPct}%`;
+    if (priorityChartInstance) priorityChartInstance.destroy();
+    priorityChartInstance = new Chart(document.getElementById('priorityChart'), {
+        type: 'polarArea',
+        data: {
+            labels: ['Alta', 'Média', 'Baixa'],
+            datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(99, 102, 241, 0.7)'] }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { r: { grid: { color: 'rgba(128,128,128,0.2)' }, ticks: { display: false } } },
+            plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } }
+        }
+    });
 }
 
 function getTodayString() {

@@ -162,25 +162,46 @@
     </div>
 
     <div class="modal-overlay" id="statsOverlay">
-        <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-box" style="max-width: 850px;">
             <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 20px;">
-                <h3 style="margin:0;">📊 Relatório</h3>
+                style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border);">
+                <h3 style="margin:0;">📊 Dashboards de Performance</h3>
                 <button class="btn-secondary" onclick="closeStatsModal()">Fechar</button>
             </div>
-            <div class="modal-content-scroll">
-                <div class="charts-grid">
-                    <div class="chart-container">
-                        <h4 class="chart-title">Tags</h4>
-                        <div style="height: 200px; display: flex; justify-content: center;"><canvas
-                                id="tagsChart"></canvas></div>
+            <div class="modal-content-scroll" style="padding: 20px;">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <span class="kpi-label">Total</span>
+                        <span class="kpi-value" id="kpi-total">0</span>
                     </div>
-                    <div class="chart-container">
-                        <h4 class="chart-title">Status</h4>
-                        <div style="height: 200px;"><canvas id="statusChart"></canvas></div>
+                    <div class="kpi-card" style="border-left: 4px solid #22c55e;">
+                        <span class="kpi-label">Concluídas</span>
+                        <span class="kpi-value" id="kpi-done">0</span>
+                    </div>
+                    <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+                        <span class="kpi-label">Atrasadas</span>
+                        <span class="kpi-value" id="kpi-late">0</span>
+                    </div>
+                    <div class="kpi-card" style="border-left: 4px solid var(--accent);">
+                        <span class="kpi-label">Eficiência</span>
+                        <span class="kpi-value" id="kpi-avg">0%</span>
                     </div>
                 </div>
-                <div id="statsSummary" class="stats-summary">...</div>
+
+                <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                    <div class="chart-container">
+                        <h4 class="chart-title">Distribuição por Tags</h4>
+                        <div style="height: 220px;"><canvas id="tagsChart"></canvas></div>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="chart-title">Status do Workflow</h4>
+                        <div style="height: 220px;"><canvas id="statusChart"></canvas></div>
+                    </div>
+                    <div class="chart-container">
+                        <h4 class="chart-title">Carga por Prioridade</h4>
+                        <div style="height: 220px;"><canvas id="priorityChart"></canvas></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
