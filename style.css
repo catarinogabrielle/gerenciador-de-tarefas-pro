@@ -340,7 +340,7 @@ header {
   padding: 0;
   border-radius: 16px;
   width: 100%;
-  max-width: 700px;
+  max-width: 1000px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
   animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
