@@ -79,7 +79,16 @@ let isCalendarView = false;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
-// --- CORREÇÃO DO MODAL DE SISTEMA: Sempre exibir "Cancelar" / "Fechar" ---
+let timerInterval;
+let timerSeconds = 1500;
+let isTimerRunning = false;
+let tagsChartInstance = null;
+let statusChartInstance = null;
+let priorityChartInstance = null;
+
+// ==========================================
+// MODAIS DO SISTEMA 
+// ==========================================
 function showSysModal(title, message, type = 'alert', placeholder = '') {
     return new Promise((resolve) => {
         const overlay = document.getElementById('sysOverlay');
@@ -96,8 +105,6 @@ function showSysModal(title, message, type = 'alert', placeholder = '') {
         inputEl.style.display = type === 'prompt' ? 'block' : 'none';
         inputEl.placeholder = placeholder;
 
-        // Sempre visível para evitar ficar preso. 
-        // Se for alerta, ele atua como um botão "Fechar".
         btnCancel.style.display = 'block';
         btnCancel.innerText = type === 'alert' ? 'Fechar' : 'Cancelar';
 
@@ -126,8 +133,10 @@ function showSysModal(title, message, type = 'alert', placeholder = '') {
 async function showSysAlert(message) { return await showSysModal('Aviso', message, 'alert'); }
 async function showSysConfirm(message, title = 'Confirmação') { return await showSysModal(title, message, 'confirm'); }
 async function showSysPrompt(title, placeholder = '') { return await showSysModal(title, '', 'prompt', placeholder); }
-// --------------------------------------------------------------------------
 
+// ==========================================
+// NÚCLEO EM TEMPO REAL (FIREBASE)
+// ==========================================
 async function loadFromFirebase() {
     if (!currentUser) return;
     try {
@@ -141,7 +150,7 @@ async function loadFromFirebase() {
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     let parsedTags = data.tags || tags;
-                    // Migração de strings velhas de tags para objetos {name, color}
+                    // Proteção contra versões antigas das tags
                     parsedTags = parsedTags.map(t => typeof t === 'string' ? { name: t, color: '#3b82f6' } : t);
 
                     newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
@@ -155,6 +164,8 @@ async function loadFromFirebase() {
                 });
 
                 boards = newBoards;
+
+                // Se o usuário não tem nenhum quadro, obriga a criar um
                 if (boards.length === 0) {
                     if (!document.getElementById('sysOverlay').classList.contains('active') && !document.getElementById('templateOverlay').classList.contains('active')) {
                         openTemplateModal();
@@ -164,12 +175,13 @@ async function loadFromFirebase() {
 
                 renderBoardsList();
 
-                if (!currentBoardId || !boards.find(b => b.id === currentBoardId)) {
+                // Se logou agora ou o quadro que estava foi apagado, pega o primeiro da lista
+                if (!currentBoardId || !newAllBoardsData[currentBoardId]) {
                     allBoardsData = newAllBoardsData;
-                    loadBoardData(boards[0].id);
+                    if (boards.length > 0) loadBoardData(boards[0].id);
                 } else {
+                    // ATUALIZAÇÃO INTELIGENTE DA TELA (Impede que tudo pisque)
                     const activeData = newAllBoardsData[currentBoardId];
-                    allBoardsData = newAllBoardsData;
                     let needsRender = false;
 
                     if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) { tasks = activeData.tasks; needsRender = true; }
@@ -177,7 +189,10 @@ async function loadFromFirebase() {
                     if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) { tags = activeData.tags; updateTagsDropdown(); needsRender = true; }
 
                     const boardObj = boards.find(b => b.id === currentBoardId);
-                    if (boardObj.title !== boardTitle) { boardTitle = boardObj.title; document.getElementById('boardTitle').innerText = boardTitle; }
+                    if (boardObj && boardObj.title !== boardTitle) {
+                        boardTitle = boardObj.title;
+                        document.getElementById('boardTitle').innerText = boardTitle;
+                    }
 
                     if (JSON.stringify(activeData.members) !== JSON.stringify(currentBoardMembers)) {
                         currentBoardMembers = activeData.members;
@@ -188,15 +203,24 @@ async function loadFromFirebase() {
                     if (document.getElementById('btnShareBoard')) document.getElementById('btnShareBoard').style.display = isOwner ? 'block' : 'none';
                     if (document.getElementById('btnDeleteBoard')) document.getElementById('btnDeleteBoard').style.display = isOwner ? 'block' : 'none';
 
+                    allBoardsData = newAllBoardsData;
                     if (needsRender) render();
                 }
+            }, error => {
+                console.error("Erro Live DB:", error);
+                showSysAlert("Conexão perdida. Recarregue a página.");
             });
-    } catch (error) { console.error(error); showSysAlert("Erro ao baixar dados."); }
+    } catch (error) {
+        console.error(error);
+        showSysAlert("Erro ao baixar dados da nuvem.");
+    }
 }
 
 function loadBoardData(boardId) {
     currentBoardId = boardId;
     const bData = allBoardsData[boardId];
+    if (!bData) return;
+
     tasks = bData.tasks || [];
     columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
     tags = bData.tags || [];
@@ -213,26 +237,37 @@ function loadBoardData(boardId) {
 
 function syncToFirebase() {
     if (!currentUser || !currentBoardId) return;
+
+    // Atualiza apenas a memória local, o Firebase Snapshot vai assumir sozinho
     allBoardsData[currentBoardId].tasks = tasks;
     allBoardsData[currentBoardId].columns = columns;
     allBoardsData[currentBoardId].tags = tags;
     allBoardsData[currentBoardId].members = currentBoardMembers;
 
     db.collection('boards').doc(currentBoardId).set({
-        title: boardTitle, tasks_string: JSON.stringify(tasks), columns_string: JSON.stringify(columns),
-        tags: tags, members: currentBoardMembers, owner: allBoardsData[currentBoardId].owner || currentUser.email,
+        title: boardTitle,
+        tasks_string: JSON.stringify(tasks),
+        columns_string: JSON.stringify(columns),
+        tags: tags,
+        members: currentBoardMembers,
+        owner: allBoardsData[currentBoardId].owner || currentUser.email,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(err => showSysAlert("Erro Firebase: " + err.message));
+    }, { merge: true }).catch(err => console.error("Erro Firebase:", err));
 }
 
-// === LÓGICA DE TEMPLATES ===
+// ==========================================
+// QUADROS E TEMPLATES
+// ==========================================
 function openTemplateModal() { document.getElementById('templateOverlay').classList.add('active'); }
 function closeTemplateModal() { document.getElementById('templateOverlay').classList.remove('active'); }
 
 async function applyTemplate(type) {
     closeTemplateModal();
     const title = await showSysPrompt("Nome do novo quadro:");
-    if (!title) return;
+    if (!title) {
+        if (boards.length === 0) openTemplateModal(); // Oculta se cancelar no primeiro
+        return;
+    }
 
     let initCols = [];
     if (type === 'sprint') {
@@ -249,13 +284,35 @@ async function applyTemplate(type) {
         tasks_string: "[]", columns_string: JSON.stringify(initCols), tags: tags
     };
 
-    boards.push({ id: newId, title: title, owner: currentUser.email });
-    allBoardsData[newId] = { tasks: [], columns: initCols, members: [currentUser.email], tags: tags, owner: currentUser.email };
+    // Aponta o foco para o ID do quadro sendo criado. O Snapshot assume a partir daqui.
+    currentBoardId = newId;
     await db.collection('boards').doc(newId).set(newBoardData);
-    loadBoardData(newId);
 }
 
-// === RENDERIZAÇÃO & INTERFACE ===
+function switchBoard(boardId) {
+    syncToFirebase();
+    loadBoardData(boardId);
+}
+
+async function deleteCurrentBoard() {
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) {
+        return showSysAlert("Apenas o criador do quadro pode excluí-lo.");
+    }
+    if (boards.length <= 1) {
+        return showSysAlert("Você não pode excluir o único quadro restante.");
+    }
+    const confirmed = await showSysConfirm("Tem certeza? Isso apagará este quadro para TODOS os membros.", "Excluir Quadro");
+    if (confirmed) {
+        const idToDelete = currentBoardId;
+        // Pula para o próximo seguro
+        currentBoardId = boards.find(b => b.id !== idToDelete).id;
+        await db.collection('boards').doc(idToDelete).delete();
+    }
+}
+
+// ==========================================
+// INTERFACE PRINCIPAL
+// ==========================================
 function render() {
     if (isCalendarView) { renderCalendar(); return; }
     document.getElementById('boardMain').style.display = 'flex';
@@ -326,7 +383,49 @@ function render() {
     updateMetrics(filteredTasks); setupCardDragAndDrop(); setupColumnDragAndDrop();
 }
 
-// === LÓGICA DO MODAL DE TAREFA ===
+function setupCardDragAndDrop() {
+    document.querySelectorAll('.tasks-container').forEach(container => {
+        new Sortable(container, {
+            group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
+            onEnd: function (evt) {
+                const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status');
+                const task = tasks.find(t => t.id === itemEl.id);
+                if (task) {
+                    const targetCol = columns.find(c => c.id === newStatus);
+
+                    if (task.status !== newStatus) {
+                        if (!task.history) task.history = [];
+                        task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
+                    }
+                    task.status = newStatus;
+                    const isDoneTarget = targetCol?.title.toLowerCase().includes('conclu');
+                    if (isDoneTarget) { task.endDate = getTodayString(); fireConfetti(); }
+                }
+
+                const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
+                let newTasks = []; let map = new Map(tasks.map(t => [t.id, t]));
+                newOrderIds.forEach(id => { if (map.has(id)) { newTasks.push(map.get(id)); map.delete(id); } });
+                tasks = [...newTasks, ...Array.from(map.values())];
+                save();
+            }
+        });
+    });
+}
+
+function setupColumnDragAndDrop() {
+    new Sortable(document.getElementById('boardMain'), {
+        handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
+        onEnd: function () {
+            let n = [];
+            document.querySelectorAll('.column').forEach(e => { let c = columns.find(x => x.id === e.id); if (c) n.push(c); });
+            columns = n; saveColumns();
+        }
+    });
+}
+
+// ==========================================
+// FUNÇÕES DO MODAL TAREFA
+// ==========================================
 function openModal(taskId = null, initialStatus = null) {
     const modal = document.getElementById('modalOverlay');
     document.getElementById('modalTaskInput').value = ''; document.getElementById('modalDescriptionInput').value = '';
@@ -335,7 +434,6 @@ function openModal(taskId = null, initialStatus = null) {
     document.getElementById('commentInput').value = '';
     removeCover({ stopPropagation: () => { } });
 
-    // Preenche select de membros
     const assgnSelect = document.getElementById('modalAssigneeInput');
     assgnSelect.innerHTML = `<option value="">Sem responsável</option>` + currentBoardMembers.map(m => `<option value="${m}">${m}</option>`).join('');
 
@@ -393,7 +491,6 @@ async function saveTaskBtnClick() {
     if (editingTaskId) {
         const i = tasks.findIndex(t => t.id === editingTaskId);
         if (i > -1) {
-            // Histórico se mudou responsável
             if (tasks[i].assignee !== newTaskData.assignee) addHistoryLog(`Responsável alterado para ${newTaskData.assignee || 'Ninguém'}`);
             tasks[i] = { ...tasks[i], ...newTaskData };
         }
@@ -407,37 +504,12 @@ async function saveTaskBtnClick() {
     save(); closeModal();
 }
 
-function setupCardDragAndDrop() {
-    document.querySelectorAll('.tasks-container').forEach(container => {
-        new Sortable(container, {
-            group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
-            onEnd: function (evt) {
-                const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status');
-                const task = tasks.find(t => t.id === itemEl.id);
-                if (task) {
-                    const targetCol = columns.find(c => c.id === newStatus);
-                    const oldCol = columns.find(c => c.id === task.status);
-
-                    if (task.status !== newStatus) {
-                        if (!task.history) task.history = [];
-                        task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol.title}"` });
-                    }
-                    task.status = newStatus;
-                    const isDoneTarget = targetCol?.title.toLowerCase().includes('conclu');
-                    if (isDoneTarget) { task.endDate = getTodayString(); fireConfetti(); }
-                }
-
-                const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
-                let newTasks = []; let map = new Map(tasks.map(t => [t.id, t]));
-                newOrderIds.forEach(id => { if (map.has(id)) { newTasks.push(map.get(id)); map.delete(id); } });
-                tasks = [...newTasks, ...Array.from(map.values())];
-                save();
-            }
-        });
-    });
+async function deleteTaskFromModal() {
+    if (!editingTaskId) return;
+    const ok = await showSysConfirm("Excluir tarefa permanentemente?");
+    if (ok) { tasks = tasks.filter(t => t.id !== editingTaskId); save(); closeModal(); }
 }
 
-// === HISTÓRICO E COMENTÁRIOS COM MENÇÕES ===
 function switchBottomTab(tab) {
     document.getElementById('btnTabComments').classList.remove('active');
     document.getElementById('btnTabHistory').classList.remove('active');
@@ -479,48 +551,56 @@ function renderCommentsList() {
     const container = document.getElementById('commentsList');
     if (tempComments.length === 0) { container.innerHTML = '<div style="color:var(--text-sub); font-size:0.8rem; text-align:center;">Nenhum comentário.</div>'; return; }
     container.innerHTML = tempComments.map(c => {
-        // Formatar Menções (@email)
         let text = c.text.replace(/(@\S+)/g, '<span class="mention">$1</span>');
         return `<div class="comment-item"><div class="comment-header"><span>${c.author}</span><span>${c.date}</span></div><div class="comment-text">${text}</div></div>`;
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
 
-// === CORES DE TAGS E FILTROS ===
+// ==========================================
+// FUNÇÕES DE APOIO
+// ==========================================
+function save() { render(); syncToFirebase(); }
+function saveColumns() { render(); syncToFirebase(); }
+
+async function deleteColumn(id) {
+    if (tasks.filter(t => t.status === id).length > 0) return showSysAlert("Esta coluna contém tarefas. Mova-as antes de excluir.");
+    const ok = await showSysConfirm("Excluir coluna vazia?");
+    if (ok) { columns = columns.filter(c => c.id !== id); saveColumns(); }
+}
+function updateColumnTitle(id, t) { let c = columns.find(x => x.id === id); if (c) { c.title = t; saveColumns(); } }
+async function addColumn() { const t = await showSysPrompt("Nome da coluna:"); if (t) { columns.push({ id: 'col-' + Date.now(), title: t }); saveColumns(); } }
+
+function addSubtask() { let i = document.getElementById('subtaskInput'); if (i.value.trim()) { tempSubtasks.push({ text: i.value.trim(), done: false }); i.value = ''; renderSubtasksList(); } }
+function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
+function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
+function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
+function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
+
 async function addNewTag() {
     const tName = await showSysPrompt("Nome da Nova Tag:");
     if (tName) {
         const tColor = document.getElementById('newTagColor').value || '#3b82f6';
-        if (!tags.find(x => x.name === tName)) {
-            tags.push({ name: tName, color: tColor });
-            updateTagsDropdown(); syncToFirebase();
-        }
+        if (!tags.find(x => x.name === tName)) { tags.push({ name: tName, color: tColor }); updateTagsDropdown(); syncToFirebase(); }
     }
 }
-
-async function updateTagsDropdown() {
+function updateTagsDropdown() {
     const m = document.getElementById('modalTagInput'); const f = document.getElementById('filterTag');
     m.innerHTML = tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
     f.innerHTML = `<option value="all">🏷️ Tags</option>` + tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
     f.value = currentTagFilter;
 }
 
-function toggleMyTasks() {
-    filterMyTasksOnly = !filterMyTasksOnly;
-    const btn = document.getElementById('btnMyTasks');
-    btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent';
-    btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)';
-    render();
-}
+function applyFilters() { currentTagFilter = document.getElementById('filterTag').value; currentPriorityFilter = document.getElementById('filterPriority').value; searchTerm = document.getElementById('searchInput').value.toLowerCase(); render(); }
+function toggleMyTasks() { filterMyTasksOnly = !filterMyTasksOnly; const btn = document.getElementById('btnMyTasks'); btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent'; btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)'; render(); }
 
-function applyFilters() {
-    currentTagFilter = document.getElementById('filterTag').value;
-    currentPriorityFilter = document.getElementById('filterPriority').value;
-    searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    render();
+function switchDescTab(mode) {
+    if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
+    else { document.getElementById('btnWrite').classList.remove('active'); document.getElementById('btnPreview').classList.add('active'); document.getElementById('modalDescriptionInput').style.display = 'none'; document.getElementById('descPreview').style.display = 'block'; document.getElementById('descPreview').innerHTML = simpleMarkdown(document.getElementById('modalDescriptionInput').value); }
 }
+function simpleMarkdown(text) { if (!text) return '<em>Vazio</em>'; let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>'); return html.split('\n').join('<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>'); }
 
-// === VISÃO CALENDÁRIO ===
+// --- CALENDÁRIO ---
 function toggleView() {
     isCalendarView = !isCalendarView;
     document.getElementById('btnViewToggle').style.background = isCalendarView ? 'var(--accent)' : 'transparent';
@@ -528,76 +608,66 @@ function toggleView() {
     document.getElementById('btnAddColBtn').style.display = isCalendarView ? 'none' : 'block';
     render();
 }
-
 function renderCalendar() {
-    document.getElementById('boardMain').style.display = 'none';
-    document.getElementById('calendarMain').style.display = 'flex';
-
-    const head = document.getElementById('calendarHeader');
-    const grid = document.getElementById('calendarGrid');
-
+    document.getElementById('boardMain').style.display = 'none'; document.getElementById('calendarMain').style.display = 'flex';
+    const head = document.getElementById('calendarHeader'); const grid = document.getElementById('calendarGrid');
     const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    head.innerHTML = `
-        <h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2>
-        <div>
-            <button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button>
-            <button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button>
-            <button class="btn-secondary" onclick="changeMonth(1)">➡️</button>
-        </div>
-    `;
-
+    head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2><div><button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button><button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button><button class="btn-secondary" onclick="changeMonth(1)">➡️</button></div>`;
     grid.innerHTML = '';
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-
-    // Dias vazios no inicio
-    for (let i = 0; i < firstDay; i++) { grid.innerHTML += `<div class="calendar-day empty"></div>`; }
-
-    // Renderizar dias
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
     for (let d = 1; d <= daysInMonth; d++) {
         let dayStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-
-        let dayTasksHtml = tasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => {
-            const isStart = t.startDate === dayStr;
-            return `<div class="cal-task-pill" onclick="openModal('${t.id}')" title="${t.text}">${isStart ? '🟢' : '🔴'} ${t.text}</div>`;
-        }).join('');
-
-        grid.innerHTML += `<div class="calendar-day"><div class="calendar-day-header">${d}</div>${dayTasksHtml}</div>`;
+        let html = tasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => `<div class="cal-task-pill" onclick="openModal('${t.id}')">${t.startDate === dayStr ? '🟢' : '🔴'} ${t.text}</div>`).join('');
+        grid.innerHTML += `<div class="calendar-day"><div class="calendar-day-header">${d}</div>${html}</div>`;
     }
 }
-function changeMonth(dir) {
-    currentMonth += dir;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    renderCalendar();
-}
+function changeMonth(dir) { currentMonth += dir; if (currentMonth > 11) { currentMonth = 0; currentYear++; } else if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
 
-// === OUTRAS FUNÇÕES DE UTILIDADE MANTIDAS (Drag&Drop Colunas, Export/Import, DeleteTask, Markdown, etc) ===
-// Abaixo estão as funções de apoio condensadas
-function deleteColumn(id) { if (tasks.filter(t => t.status === id).length > 0) showSysAlert("Coluna tem tarefas. Mova antes."); else showSysConfirm("Excluir coluna?").then(ok => { if (ok) { columns = columns.filter(c => c.id !== id); saveColumns(); } }); }
-function updateColumnTitle(id, t) { let c = columns.find(x => x.id === id); if (c) { c.title = t; saveColumns(); } }
-function setupColumnDragAndDrop() { new Sortable(document.getElementById('boardMain'), { handle: '.column-header', onEnd: function () { let n = []; document.querySelectorAll('.column').forEach(e => { let c = columns.find(x => x.id === e.id); if (c) n.push(c); }); columns = n; saveColumns(); } }); }
-function addSubtask() { let i = document.getElementById('subtaskInput'); if (i.value.trim()) { tempSubtasks.push({ text: i.value.trim(), done: false }); i.value = ''; renderSubtasksList(); } }
-function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
-function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
-function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
-function deleteTaskFromModal() { if (editingTaskId) showSysConfirm("Excluir?").then(ok => { if (ok) { tasks = tasks.filter(t => t.id !== editingTaskId); save(); closeModal(); } }); }
-function switchDescTab(mode) {
-    if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
-    else { document.getElementById('btnWrite').classList.remove('active'); document.getElementById('btnPreview').classList.add('active'); document.getElementById('modalDescriptionInput').style.display = 'none'; document.getElementById('descPreview').style.display = 'block'; document.getElementById('descPreview').innerHTML = document.getElementById('modalDescriptionInput').value; } // Markdown simples omitido por espaço, mas você pode usar a sua function simpleMarkdown
+// --- COMPARTILHAMENTO ---
+function openShareModal() { document.getElementById('shareOverlay').classList.add('active'); renderMembersList(); }
+function closeShareModal() { document.getElementById('shareOverlay').classList.remove('active'); }
+function addCollaborator() {
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode adicionar.");
+    let e = document.getElementById('collabEmail').value.trim().toLowerCase();
+    if (e && !currentBoardMembers.includes(e)) { currentBoardMembers.push(e); document.getElementById('collabEmail').value = ''; syncToFirebase(); renderMembersList(); showSysAlert(`O quadro aparecerá para ${e}`); }
 }
-function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); const r = document.documentElement; r.style.setProperty('--bg-body', theme === 'dark' ? '#010409' : '#f8fafc'); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
-function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); setBg(currentBg); }
+async function removeCollaborator(e) {
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode remover.");
+    if (e !== currentUser.email && await showSysConfirm(`Remover ${e}?`)) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); }
+}
+function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer;">Remover</button>` : ''}</div>`).join(''); }
+
+// --- UTILIDADES ---
+function saveTitle() { boardTitle = document.getElementById('boardTitle').innerText; const boardIndex = boards.findIndex(b => b.id === currentBoardId); if (boardIndex > -1) { boards[boardIndex].title = boardTitle; } renderBoardsList(); syncToFirebase(); }
+function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
+function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
+function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); applyBackground(currentBg); if (document.getElementById('statsOverlay').classList.contains('active')) renderCharts(); }
 function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
 function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function formatDate(s) { if (s) { const d = new Date(s); return new Date(d.getTime() + d.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); } return ''; }
-function updateMetrics(tl) { columns.forEach(c => { let el = document.getElementById(`count-${c.id}`); if (el) el.innerText = tl.filter(t => t.status === c.id).length; }); }
-function fireConfetti() { confetti({ particleCount: 5, spread: 40 }); }
-// Funções de compartilhamento omitidas por brevidade, pode manter as do arquivo anterior.
-function openShareModal() { document.getElementById('shareOverlay').classList.add('active'); renderMembersList(); }
-function closeShareModal() { document.getElementById('shareOverlay').classList.remove('active'); }
-function addCollaborator() { let e = document.getElementById('collabEmail').value.trim(); if (e && !currentBoardMembers.includes(e)) { currentBoardMembers.push(e); syncToFirebase(); renderMembersList(); } }
-function removeCollaborator(e) { if (e !== currentUser.email) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); } }
-function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid var(--border);">${m} <button onclick="removeCollaborator('${m}')">X</button></div>`).join(''); }
+function updateMetrics(tl) { columns.forEach(c => { let el = document.getElementById(`count-${c.id}`); if (el) el.innerText = tl.filter(t => t.status === c.id).length; }); const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu')); let pct = 0; if (tl.length > 0) { const doneCount = doneCol ? tl.filter(t => t.status === doneCol.id).length : 0; pct = Math.round((doneCount / tl.length) * 100); } document.getElementById('prog-fill').style.width = pct + '%'; document.getElementById('prog-val').innerText = pct + '%'; }
+function fireConfetti() { confetti({ particleCount: 20, spread: 40, colors: ['#ff6900', '#fff'] }); }
+function renderBoardsList() { document.getElementById('boardsList').innerHTML = boards.map(board => `<div class="board-item ${board.id === currentBoardId ? 'active' : ''}" onclick="switchBoard('${board.id}')"><span class="board-item-icon">📋</span><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${board.title}</span></div>`).join(''); }
 
-document.addEventListener('DOMContentLoaded', () => { document.body.setAttribute('data-theme', theme); setBg(currentBg); });
+async function startVoice(targetId, btnElement) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return await showSysAlert("Reconhecimento de voz não suportado."); const recognition = new SpeechRecognition(); recognition.lang = 'pt-BR'; recognition.start(); btnElement.classList.add('recording'); const originalText = btnElement.innerText; if (btnElement.classList.contains('btn-mic-small')) btnElement.innerText = "👂..."; recognition.onresult = (evt) => { const t = evt.results[0][0].transcript; const input = document.getElementById(targetId); input.value = input.value.trim() ? input.value + " " + t : t; input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1); }; recognition.onspeechend = recognition.onerror = () => { recognition.stop(); btnElement.classList.remove('recording'); if (btnElement.classList.contains('btn-mic-small')) btnElement.innerText = originalText; }; }
+function handlePaste(e) { if (!document.getElementById('modalOverlay').classList.contains('active')) return; if (e.clipboardData && e.clipboardData.items) { for (let i = 0; i < e.clipboardData.items.length; i++) { if (e.clipboardData.items[i].type.indexOf('image') !== -1) { const blob = e.clipboardData.items[i].getAsFile(); const reader = new FileReader(); reader.onload = function (event) { compressImage(event.target.result, 800, (compressedData) => { setCoverImage(compressedData); }); }; reader.readAsDataURL(blob); e.preventDefault(); return; } } } }
+function handleFileSelect(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function (e) { compressImage(e.target.result, 800, (compressedData) => { setCoverImage(compressedData); }); }; reader.readAsDataURL(input.files[0]); } }
+function compressImage(base64Str, maxWidth = 800, callback) { const img = new Image(); img.src = base64Str; img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width; let height = img.height; if (width > maxWidth) { height = Math.round((height *= maxWidth / width)); width = maxWidth; } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); callback(canvas.toDataURL('image/jpeg', 0.7)); }; }
+function setCoverImage(base64String) { document.getElementById('coverPreview').src = base64String; document.getElementById('coverPreview').style.display = 'block'; document.getElementById('coverPlaceholder').style.display = 'none'; document.getElementById('removeCoverBtn').style.display = 'block'; document.getElementById('modalCoverInput').value = base64String; }
+function removeCover(e) { e.stopPropagation(); document.getElementById('coverPreview').src = ''; document.getElementById('coverPreview').style.display = 'none'; document.getElementById('coverPlaceholder').style.display = 'block'; document.getElementById('removeCoverBtn').style.display = 'none'; document.getElementById('modalCoverInput').value = ''; document.getElementById('fileCoverInput').value = ''; }
+
+function exportData() { if (currentBoardId) { allBoardsData[currentBoardId] = { tasks, columns, tags, members: currentBoardMembers, owner: allBoardsData[currentBoardId].owner }; } const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ boards, currentBoardId, tags, allBoardsData })], { type: "application/json" })); a.download = `gerenciador-pro-backup-${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function importData(inputElement) { const file = inputElement.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function (e) { try { const d = JSON.parse(e.target.result); if (!d.allBoardsData) return showSysAlert("Backup inválido."); boards = d.boards || []; currentBoardId = d.currentBoardId; tags = d.tags || []; allBoardsData = {}; for (const [bId, bData] of Object.entries(d.allBoardsData)) { allBoardsData[bId] = { tasks: bData.tasks || JSON.parse(bData.tasks_string || "[]"), columns: bData.columns || JSON.parse(bData.columns_string || "[]"), members: bData.members || [currentUser.email], tags: bData.tags || tags, owner: bData.owner || currentUser.email }; } loadBoardData(currentBoardId); syncToFirebase(); inputElement.value = ''; showSysAlert("Backup restaurado!"); } catch (err) { showSysAlert("Falha ao ler."); } }; reader.readAsText(file); }
+
+function requestNotificationPermission() { if (Notification.permission !== "granted") Notification.requestPermission(); }
+function triggerNotification(t, b) { document.getElementById('alertSound').play().catch(e => console.log(e)); if (Notification.permission === "granted") new Notification(t, { body: b, icon: 'assets/icon.png' }); }
+function startTimer() { requestNotificationPermission(); if (isTimerRunning) return; isTimerRunning = true; timerInterval = setInterval(() => { timerSeconds--; document.getElementById('pomodoroTimer').innerText = `${Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:${(timerSeconds % 60).toString().padStart(2, '0')}`; if (timerSeconds <= 0) { clearInterval(timerInterval); isTimerRunning = false; triggerNotification("Pomodoro!", "Tempo esgotado."); showSysAlert("Pomodoro: Tempo esgotado!"); timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; } }, 1000); }
+function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
+
+function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
+function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
+document.getElementById('statsOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('statsOverlay')) closeStatsModal(); });
+function renderCharts() { const today = getTodayString(); const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu')); const stats = { total: tasks.length, done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length, priority: { Alta: 0, Média: 0, Baixa: 0 } }; const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0); tasks.forEach(t => { const tName = t.tag?.name || t.tag; if (tagCounts[tName] !== undefined) tagCounts[tName]++; if (stats.priority[t.priority] !== undefined) stats.priority[t.priority]++; }); document.getElementById('kpi-total').innerText = stats.total; document.getElementById('kpi-done').innerText = stats.done; document.getElementById('kpi-late').innerText = stats.late; document.getElementById('kpi-avg').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%'; const textColor = theme === 'dark' ? '#e6edf3' : '#18181b'; const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444']; if (tagsChartInstance) tagsChartInstance.destroy(); tagsChartInstance = new Chart(document.getElementById('tagsChart'), { type: 'doughnut', data: { labels: Object.keys(tagCounts), datasets: [{ data: Object.values(tagCounts), backgroundColor: chartColors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } } } }); if (statusChartInstance) statusChartInstance.destroy(); statusChartInstance = new Chart(document.getElementById('statusChart'), { type: 'bar', data: { labels: columns.map(c => c.title), datasets: [{ label: 'Tarefas', data: columns.map(c => tasks.filter(t => t.status === c.id).length), backgroundColor: '#3b82f6', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, plugins: { legend: { display: false } } } }); if (priorityChartInstance) priorityChartInstance.destroy(); priorityChartInstance = new Chart(document.getElementById('priorityChart'), { type: 'polarArea', data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(99, 102, 241, 0.7)'] }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(128,128,128,0.2)' }, ticks: { display: false } } }, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } } } }); }
+
+document.addEventListener('DOMContentLoaded', () => { document.body.setAttribute('data-theme', theme); applyBackground(currentBg); });
