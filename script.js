@@ -150,7 +150,6 @@ async function loadFromFirebase() {
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     let parsedTags = data.tags || tags;
-                    // Proteção contra versões antigas das tags
                     parsedTags = parsedTags.map(t => typeof t === 'string' ? { name: t, color: '#3b82f6' } : t);
 
                     newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
@@ -165,7 +164,6 @@ async function loadFromFirebase() {
 
                 boards = newBoards;
 
-                // Se o usuário não tem nenhum quadro, obriga a criar um
                 if (boards.length === 0) {
                     if (!document.getElementById('sysOverlay').classList.contains('active') && !document.getElementById('templateOverlay').classList.contains('active')) {
                         openTemplateModal();
@@ -175,12 +173,10 @@ async function loadFromFirebase() {
 
                 renderBoardsList();
 
-                // Se logou agora ou o quadro que estava foi apagado, pega o primeiro da lista
                 if (!currentBoardId || !newAllBoardsData[currentBoardId]) {
                     allBoardsData = newAllBoardsData;
                     if (boards.length > 0) loadBoardData(boards[0].id);
                 } else {
-                    // ATUALIZAÇÃO INTELIGENTE DA TELA (Impede que tudo pisque)
                     const activeData = newAllBoardsData[currentBoardId];
                     let needsRender = false;
 
@@ -238,7 +234,6 @@ function loadBoardData(boardId) {
 function syncToFirebase() {
     if (!currentUser || !currentBoardId) return;
 
-    // Atualiza apenas a memória local, o Firebase Snapshot vai assumir sozinho
     allBoardsData[currentBoardId].tasks = tasks;
     allBoardsData[currentBoardId].columns = columns;
     allBoardsData[currentBoardId].tags = tags;
@@ -265,7 +260,7 @@ async function applyTemplate(type) {
     closeTemplateModal();
     const title = await showSysPrompt("Nome do novo quadro:");
     if (!title) {
-        if (boards.length === 0) openTemplateModal(); // Oculta se cancelar no primeiro
+        if (boards.length === 0) openTemplateModal();
         return;
     }
 
@@ -284,7 +279,6 @@ async function applyTemplate(type) {
         tasks_string: "[]", columns_string: JSON.stringify(initCols), tags: tags
     };
 
-    // Aponta o foco para o ID do quadro sendo criado. O Snapshot assume a partir daqui.
     currentBoardId = newId;
     await db.collection('boards').doc(newId).set(newBoardData);
 }
@@ -304,7 +298,6 @@ async function deleteCurrentBoard() {
     const confirmed = await showSysConfirm("Tem certeza? Isso apagará este quadro para TODOS os membros.", "Excluir Quadro");
     if (confirmed) {
         const idToDelete = currentBoardId;
-        // Pula para o próximo seguro
         currentBoardId = boards.find(b => b.id !== idToDelete).id;
         await db.collection('boards').doc(idToDelete).delete();
     }
@@ -424,7 +417,7 @@ function setupColumnDragAndDrop() {
 }
 
 // ==========================================
-// FUNÇÕES DO MODAL TAREFA
+// FUNÇÕES DO MODAL TAREFA E TAGS
 // ==========================================
 function openModal(taskId = null, initialStatus = null) {
     const modal = document.getElementById('modalOverlay');
@@ -447,6 +440,8 @@ function openModal(taskId = null, initialStatus = null) {
         document.getElementById('modalTaskInput').value = task.text;
         document.getElementById('modalDescriptionInput').value = task.description || '';
         document.getElementById('modalTagInput').value = task.tag?.name || task.tag || '';
+        updateColorPicker(); // Atualiza a cor de acordo com a tag da tarefa
+
         document.getElementById('modalPriorityInput').value = task.priority;
         document.getElementById('modalAssigneeInput').value = task.assignee || '';
         document.getElementById('modalDateStart').value = task.startDate || '';
@@ -463,6 +458,12 @@ function openModal(taskId = null, initialStatus = null) {
         document.getElementById('modalDeleteBtn').style.display = 'none';
         tempSubtasks = []; tempComments = []; tempHistory = [];
         document.getElementById('modalDateStart').value = getTodayString();
+
+        // Garante que a cor puxe da tag que estiver selecionada por default
+        if (tags.length > 0) {
+            document.getElementById('modalTagInput').selectedIndex = 0;
+            updateColorPicker();
+        }
     }
 
     renderSubtasksList(); renderCommentsList(); renderHistory();
@@ -508,6 +509,64 @@ async function deleteTaskFromModal() {
     if (!editingTaskId) return;
     const ok = await showSysConfirm("Excluir tarefa permanentemente?");
     if (ok) { tasks = tasks.filter(t => t.id !== editingTaskId); save(); closeModal(); }
+}
+
+// LOGICA DE CORES DA TAG
+function updateTagsDropdown() {
+    const m = document.getElementById('modalTagInput');
+    const f = document.getElementById('filterTag');
+    const currVal = m.value;
+
+    m.innerHTML = tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    f.innerHTML = `<option value="all">🏷️ Tags</option>` + tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+
+    if (currVal && tags.find(t => t.name === currVal)) {
+        m.value = currVal;
+    }
+    f.value = currentTagFilter;
+    updateColorPicker();
+}
+
+function updateColorPicker() {
+    const selectedTagName = document.getElementById('modalTagInput').value;
+    const tag = tags.find(t => t.name === selectedTagName);
+    if (tag && tag.color) {
+        document.getElementById('newTagColor').value = tag.color;
+    }
+}
+
+function updateCurrentTagColor() {
+    const selectedTagName = document.getElementById('modalTagInput').value;
+    const newColor = document.getElementById('newTagColor').value;
+    const tagIndex = tags.findIndex(t => t.name === selectedTagName);
+
+    if (tagIndex > -1) {
+        tags[tagIndex].color = newColor;
+        // Varre e atualiza a tag de todas as tarefas existentes em memoria
+        tasks.forEach(t => {
+            if (t.tag && t.tag.name === selectedTagName) {
+                t.tag.color = newColor;
+            } else if (typeof t.tag === 'string' && t.tag === selectedTagName) {
+                t.tag = { name: selectedTagName, color: newColor };
+            }
+        });
+        syncToFirebase();
+        render(); // Vai atualizar a cor visualmente nos cards atras do modal
+    }
+}
+
+async function addNewTag() {
+    const tName = await showSysPrompt("Nome da Nova Tag:");
+    if (tName) {
+        const tColor = document.getElementById('newTagColor').value || '#3b82f6';
+        if (!tags.find(x => x.name === tName)) {
+            tags.push({ name: tName, color: tColor });
+            updateTagsDropdown();
+            document.getElementById('modalTagInput').value = tName;
+            updateColorPicker();
+            syncToFirebase();
+        }
+    }
 }
 
 function switchBottomTab(tab) {
@@ -577,20 +636,6 @@ function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; render
 function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
 function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
 
-async function addNewTag() {
-    const tName = await showSysPrompt("Nome da Nova Tag:");
-    if (tName) {
-        const tColor = document.getElementById('newTagColor').value || '#3b82f6';
-        if (!tags.find(x => x.name === tName)) { tags.push({ name: tName, color: tColor }); updateTagsDropdown(); syncToFirebase(); }
-    }
-}
-function updateTagsDropdown() {
-    const m = document.getElementById('modalTagInput'); const f = document.getElementById('filterTag');
-    m.innerHTML = tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-    f.innerHTML = `<option value="all">🏷️ Tags</option>` + tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-    f.value = currentTagFilter;
-}
-
 function applyFilters() { currentTagFilter = document.getElementById('filterTag').value; currentPriorityFilter = document.getElementById('filterPriority').value; searchTerm = document.getElementById('searchInput').value.toLowerCase(); render(); }
 function toggleMyTasks() { filterMyTasksOnly = !filterMyTasksOnly; const btn = document.getElementById('btnMyTasks'); btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent'; btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)'; render(); }
 
@@ -638,7 +683,7 @@ async function removeCollaborator(e) {
 }
 function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer;">Remover</button>` : ''}</div>`).join(''); }
 
-// --- UTILIDADES ---
+// --- FUNÇÕES CORE RESTANTES ---
 function saveTitle() { boardTitle = document.getElementById('boardTitle').innerText; const boardIndex = boards.findIndex(b => b.id === currentBoardId); if (boardIndex > -1) { boards[boardIndex].title = boardTitle; } renderBoardsList(); syncToFirebase(); }
 function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
 function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }

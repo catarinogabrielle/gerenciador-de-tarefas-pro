@@ -106,29 +106,32 @@
                     <div id="subtaskList" class="subtask-list"></div>
                 </div>
 
+                <!-- CORREÇÃO: Bloco de Tag/Prioridade com espaçamento adequado e limpo -->
                 <div class="form-row"
-                    style="background: var(--bg-column); border-radius: 8px; margin-bottom: 20px; padding: 10px;">
-                    <div class="form-group" style="margin-bottom: 0;">
+                    style="background: var(--bg-column); border-radius: 8px; margin-bottom: 20px; padding: 15px; gap: 15px;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
                         <label>Tag</label>
-                        <div style="display: flex; gap: 5px;">
-                            <select id="modalTagInput" style="flex:1;"></select>
-                            <input type="color" id="newTagColor" title="Cor da nova tag"
-                                style="width: 38px; height: 38px; padding: 0; border: none; border-radius: 4px; cursor: pointer;">
+                        <div style="display: flex; gap: 6px; align-items: stretch;">
+                            <select id="modalTagInput" class="input-main" style="flex:1; padding: 8px;"
+                                onchange="updateColorPicker()"></select>
+                            <input type="color" id="newTagColor" title="Alterar cor da tag selecionada"
+                                style="width: 40px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--bg-body);"
+                                onchange="updateCurrentTagColor()">
                             <button class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
-                                style="padding: 10px;">+</button>
+                                style="padding: 0 12px; margin: 0;">+</button>
                         </div>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
                         <label>Prioridade</label>
-                        <select id="modalPriorityInput">
+                        <select id="modalPriorityInput" class="input-main" style="padding: 8px;">
                             <option value="Alta">Alta</option>
                             <option value="Média">Média</option>
                             <option value="Baixa">Baixa</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
                         <label>Responsável</label>
-                        <select id="modalAssigneeInput">
+                        <select id="modalAssigneeInput" class="input-main" style="padding: 8px;">
                             <option value="">Sem responsável</option>
                         </select>
                     </div>
@@ -181,6 +184,7 @@
         </div>
     </div>
 
+    <!-- Modal Templates -->
     <div class="modal-overlay" id="templateOverlay">
         <div class="modal-box" style="max-width: 400px; padding: 20px;">
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
@@ -201,6 +205,7 @@
         </div>
     </div>
 
+    <!-- Modal Relatórios -->
     <div class="modal-overlay" id="statsOverlay">
         <div class="modal-box" style="max-width: 850px;">
             <div
@@ -237,6 +242,7 @@
         </div>
     </div>
 
+    <!-- Modal de Compartilhamento -->
     <div class="modal-overlay" id="shareOverlay">
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
@@ -369,6 +375,7 @@
         <span id="prog-val" style="font-weight: 700;">0%</span>
     </footer>
 
+    <!-- Modal de Sistema Corrigido -->
     <div class="sys-overlay" id="sysOverlay">
         <div class="sys-box">
             <h3 id="sysTitle" style="margin-top:0; margin-bottom: 10px;">Aviso</h3>
