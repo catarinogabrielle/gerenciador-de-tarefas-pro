@@ -64,7 +64,6 @@ let columns = [];
 let tasks = [];
 let currentBoardMembers = [];
 
-// Lista Padrão de Tags (Agora garantida de aparecer sempre)
 const defaultTags = [
     { name: "💻 Desenvolvimento", color: "#3b82f6" },
     { name: "🐛 Bug Fix", color: "#ef4444" },
@@ -159,7 +158,6 @@ async function loadFromFirebase() {
                 snapshot.forEach(doc => {
                     const data = doc.data();
 
-                    // Tratamento e Fusão de Tags
                     let dbTags = data.tags || [];
                     let parsedTags = dbTags.map(t => {
                         let tagObj = typeof t === 'string' ? { name: t, color: '#3b82f6' } : { ...t };
@@ -170,7 +168,6 @@ async function loadFromFirebase() {
                         return tagObj;
                     });
 
-                    // INJEÇÃO AUTOMÁTICA: Garante que as tags default sempre existam
                     defaultTags.forEach(defTag => {
                         if (!parsedTags.find(pt => pt.name === defTag.name)) {
                             parsedTags.push({ ...defTag });
@@ -388,8 +385,9 @@ function render() {
 
             let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
 
+            // Renderização do avatar (pílula com nome)
             let avatarName = t.assignee ? t.assignee.split('@')[0] : '';
-            let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${avatarName.charAt(0).toUpperCase()}</div>` : '';
+            let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${avatarName}</div>` : '';
 
             let progressHtml = '';
             if (t.subtasks && t.subtasks.length > 0) {
@@ -717,7 +715,8 @@ async function removeCollaborator(e) {
     if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode remover.");
     if (e !== currentUser.email && await showSysConfirm(`Remover ${e}?`)) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); }
 }
-function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
+// Renderização atualizada para mostrar o nome (início do email) no Modal de Membros também
+function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0]}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
 // --- DASHBOARDS / RELATORIOS MELHORADOS ---
 function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }

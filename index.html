@@ -49,6 +49,7 @@
             </div>
 
             <div class="modal-content-scroll">
+
                 <div class="form-group">
                     <label>Título da Tarefa</label>
                     <div style="display: flex; gap: 8px;">
@@ -71,6 +72,26 @@
                     <input type="file" id="fileCoverInput" accept="image/*" style="display: none;"
                         onchange="handleFileSelect(this)">
                     <input type="hidden" id="modalCoverInput">
+                </div>
+
+                <div class="form-group">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                        <label style="margin:0;">Descrição (Markdown Ativo ✨)</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn-mic-small" onclick="startVoice('modalDescriptionInput', this)"
+                                id="descMicBtn">🎙️ Ditar</button>
+                            <div class="tab-buttons-small">
+                                <button type="button" class="tab-btn-small active" onclick="switchDescTab('write')"
+                                    id="btnWrite">✏️ Escrever</button>
+                                <button type="button" class="tab-btn-small" onclick="switchDescTab('preview')"
+                                    id="btnPreview">👁️ Ver</button>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea id="modalDescriptionInput" class="input-main" rows="4"
+                        placeholder="Detalhes da tarefa..."></textarea>
+                    <div id="descPreview" class="markdown-preview" style="display: none;"></div>
                 </div>
 
                 <div class="form-grid">
@@ -102,35 +123,17 @@
                             <option value="">Sem responsável</option>
                         </select>
                     </div>
+                </div>
 
-                    <div class="form-group">
+                <div class="form-row" style="display: flex; flex-direction: row; gap: 15px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
                         <label>Início</label>
                         <input type="date" id="modalDateStart" class="input-main">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
                         <label>Entrega</label>
                         <input type="date" id="modalDateEnd" class="input-main">
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-                        <label style="margin:0;">Descrição (Markdown Ativo ✨)</label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <button class="btn-mic-small" onclick="startVoice('modalDescriptionInput', this)"
-                                id="descMicBtn">🎙️ Ditar</button>
-                            <div class="tab-buttons-small">
-                                <button type="button" class="tab-btn-small active" onclick="switchDescTab('write')"
-                                    id="btnWrite">✏️ Escrever</button>
-                                <button type="button" class="tab-btn-small" onclick="switchDescTab('preview')"
-                                    id="btnPreview">👁️ Ver</button>
-                            </div>
-                        </div>
-                    </div>
-                    <textarea id="modalDescriptionInput" class="input-main" rows="4"
-                        placeholder="Detalhes da tarefa..."></textarea>
-                    <div id="descPreview" class="markdown-preview" style="display: none;"></div>
                 </div>
 
                 <div class="form-group">
@@ -177,7 +180,6 @@
         </div>
     </div>
 
-    <!-- Modal Templates -->
     <div class="modal-overlay" id="templateOverlay">
         <div class="modal-box" style="max-width: 400px; padding: 20px;">
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
@@ -195,7 +197,6 @@
         </div>
     </div>
 
-    <!-- Modal Relatórios -->
     <div class="modal-overlay" id="statsOverlay">
         <div class="modal-box" style="max-width: 1000px; width: 95%;">
             <div
@@ -205,9 +206,10 @@
                     style="padding: 6px 12px; height: auto;">Fechar</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px 30px;">
+                <!-- CARDS DE KPI COM CLASSES DE CORES -->
                 <div class="kpi-grid">
-                    <div class="kpi-card"><span class="kpi-label">Total de Tarefas</span><span class="kpi-value"
-                            id="kpi-total">0</span></div>
+                    <div class="kpi-card kpi-primary"><span class="kpi-label">Total de Tarefas</span><span
+                            class="kpi-value" id="kpi-total">0</span></div>
                     <div class="kpi-card kpi-success"><span class="kpi-label">Concluídas</span><span class="kpi-value"
                             id="kpi-done">0</span></div>
                     <div class="kpi-card kpi-danger"><span class="kpi-label">Atrasadas</span><span class="kpi-value"
@@ -238,7 +240,6 @@
         </div>
     </div>
 
-    <!-- Modal de Compartilhamento -->
     <div class="modal-overlay" id="shareOverlay">
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
