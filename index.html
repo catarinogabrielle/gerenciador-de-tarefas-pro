@@ -206,6 +206,37 @@
         </div>
     </div>
 
+    <!-- Modal de Compartilhamento -->
+    <div class="modal-overlay" id="shareOverlay">
+        <div class="modal-box" style="max-width: 450px;">
+            <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin:0;">👥 Compartilhar Quadro</h3>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 1rem;"
+                    onclick="closeShareModal()">×</button>
+            </div>
+            <div class="modal-content-scroll" style="padding: 20px;">
+                <div class="form-group">
+                    <label>Adicionar Colaborador (E-mail)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="email" id="collabEmail" class="input-main" placeholder="email@exemplo.com">
+                        <button class="btn-primary" style="padding: 10px;"
+                            onclick="addCollaborator()">Adicionar</button>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-sub); margin-top: 5px;">Se o usuário criar uma
+                        conta com este e-mail no futuro, o quadro já estará lá.</span>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+
+                <div class="form-group">
+                    <label>Membros do Quadro</label>
+                    <div id="membersList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <nav class="sidebar" id="sidebar">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="font-weight: 800; font-size: 1.2rem; margin: 0;">Meu Gerenciador</h2>
@@ -249,6 +280,8 @@
             </div>
         </div>
 
+        <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #10b981; border-color: #10b981;"
+            onclick="openShareModal()">👥 Compartilhar Quadro</button>
         <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #3b82f6; border-color: #3b82f6;"
             onclick="openStatsModal()">📊 Relatórios</button>
         <button class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="toggleTheme()">🌓 Tema</button>

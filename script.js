@@ -84,6 +84,7 @@ let currentBoardId = null;
 let boardTitle = '';
 let columns = [];
 let tasks = [];
+let currentBoardMembers = []; // Nova variável para Colaboradores
 let tags = [
     "💻 Desenvolvimento",
     "🐛 Bug Fix",
@@ -106,120 +107,104 @@ let isTimerRunning = false;
 let tagsChartInstance = null;
 let statusChartInstance = null;
 
+// CARREGAR DADOS + MIGRAÇÃO
 async function loadFromFirebase() {
-    if (!currentUser) {
-        return;
-    }
+    if (!currentUser) return;
 
     try {
-        const docRef = db.collection('users').doc(currentUser.uid);
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            const data = doc.data();
-
-            boards = data.boards || [];
-            currentBoardId = data.currentBoardId || (boards.length > 0 ? boards[0].id : null);
-            tags = data.tags || [];
-            allBoardsData = {};
-
-            if (data.boardData) {
-                for (const [bId, bData] of Object.entries(data.boardData)) {
-                    allBoardsData[bId] = {
-                        tasks: JSON.parse(bData.tasks_string || "[]"),
-                        columns: JSON.parse(bData.columns_string || "[]")
-                    };
-                }
+        // 1. SCRIPT DE MIGRAÇÃO: Puxa dados antigos e converte para a nova estrutura colaborativa
+        const oldDoc = await db.collection('users').doc(currentUser.uid).get();
+        if (oldDoc.exists && oldDoc.data().boards) {
+            const oldData = oldDoc.data();
+            for (const b of oldData.boards) {
+                const bData = oldData.boardData[b.id] || { tasks_string: "[]", columns_string: "[]" };
+                await db.collection('boards').doc(b.id).set({
+                    title: b.title,
+                    owner: currentUser.email,
+                    members: [currentUser.email],
+                    tasks_string: bData.tasks_string,
+                    columns_string: bData.columns_string,
+                    tags: oldData.tags || tags
+                });
             }
-
-            if (currentBoardId && allBoardsData[currentBoardId]) {
-                tasks = allBoardsData[currentBoardId].tasks || [];
-                columns = allBoardsData[currentBoardId].columns || [];
-            } else {
-                tasks = [];
-                columns = [
-                    { id: 'todo', title: 'Pendências' },
-                    { id: 'doing', title: 'Em Andamento' },
-                    { id: 'done', title: 'Concluído' }
-                ];
-            }
-
-            const currentBoardObj = boards.find(b => b.id === currentBoardId);
-            boardTitle = currentBoardObj ? currentBoardObj.title : 'Meu Quadro';
-            document.getElementById('boardTitle').innerText = boardTitle;
-
-            renderBoardsList();
-            updateTagsDropdown();
-            render();
-
-        } else {
-            const newId = 'board-' + Date.now();
-
-            boards = [{ id: newId, title: 'Meu Primeiro Quadro' }];
-            currentBoardId = newId;
-            tasks = [];
-            columns = [
-                { id: 'todo', title: 'Pendências' },
-                { id: 'doing', title: 'Em Andamento' },
-                { id: 'done', title: 'Concluído' }
-            ];
-
-            allBoardsData = {};
-            allBoardsData[currentBoardId] = {
-                tasks: tasks,
-                columns: columns
-            };
-
-            boardTitle = 'Meu Primeiro Quadro';
-            document.getElementById('boardTitle').innerText = boardTitle;
-
-            renderBoardsList();
-            updateTagsDropdown();
-            render();
-            syncToFirebase();
+            // Deleta o doc antigo para não rodar a migração duas vezes
+            await db.collection('users').doc(currentUser.uid).delete();
+            console.log("Migração para estrutura colaborativa concluída!");
         }
+
+        // 2. CARREGAR QUADROS COMPARTILHADOS
+        const snapshot = await db.collection('boards')
+            .where('members', 'array-contains', currentUser.email)
+            .get();
+
+        boards = [];
+        allBoardsData = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            boards.push({ id: doc.id, title: data.title, owner: data.owner });
+            allBoardsData[doc.id] = {
+                tasks: JSON.parse(data.tasks_string || "[]"),
+                columns: JSON.parse(data.columns_string || "[]"),
+                members: data.members || [currentUser.email],
+                tags: data.tags || ["💻 Desenvolvimento", "🐛 Bug Fix", "🎨 Design"],
+                owner: data.owner
+            };
+        });
+
+        if (boards.length > 0) {
+            loadBoardData(boards[0].id);
+        } else {
+            await createNewBoard("Meu Primeiro Quadro");
+        }
+
     } catch (error) {
         console.error("Erro loadFromFirebase:", error);
         await showSysAlert("Erro ao baixar dados da nuvem.");
     }
 }
 
+function loadBoardData(boardId) {
+    currentBoardId = boardId;
+    const bData = allBoardsData[boardId];
+
+    tasks = bData.tasks || [];
+    columns = bData.columns || [
+        { id: 'todo', title: 'Pendências' },
+        { id: 'doing', title: 'Em Andamento' },
+        { id: 'done', title: 'Concluído' }
+    ];
+    tags = bData.tags || [];
+    currentBoardMembers = bData.members || [currentUser.email];
+
+    const boardObj = boards.find(b => b.id === boardId);
+    boardTitle = boardObj ? boardObj.title : 'Meu Quadro';
+    document.getElementById('boardTitle').innerText = boardTitle;
+
+    renderBoardsList();
+    updateTagsDropdown();
+    render();
+}
+
 function syncToFirebase() {
-    if (!currentUser) {
-        return;
-    }
+    if (!currentUser || !currentBoardId) return;
 
-    if (currentBoardId) {
-        allBoardsData[currentBoardId] = {
-            tasks: tasks || [],
-            columns: columns || []
-        };
-    }
+    // Atualiza memória local
+    allBoardsData[currentBoardId].tasks = tasks;
+    allBoardsData[currentBoardId].columns = columns;
+    allBoardsData[currentBoardId].tags = tags;
+    allBoardsData[currentBoardId].members = currentBoardMembers;
 
-    const payloadBoardData = {};
-
-    for (const [bId, bData] of Object.entries(allBoardsData)) {
-        const validId = bId ? String(bId) : `board-${Date.now()}`;
-        payloadBoardData[validId] = {
-            tasks_string: JSON.stringify(bData.tasks || []),
-            columns_string: JSON.stringify(bData.columns || [])
-        };
-    }
-
-    const rawPayload = {
-        boards: boards || [],
-        currentBoardId: currentBoardId || "",
-        tags: tags || [],
-        boardData: payloadBoardData
-    };
-
-    const cleanPayload = JSON.parse(JSON.stringify(rawPayload));
-    cleanPayload.lastUpdated = firebase.firestore.FieldValue.serverTimestamp();
-
-    db.collection('users').doc(currentUser.uid).set(cleanPayload)
-        .then(() => {
-            console.log("Salvo na nuvem com sucesso!");
-        })
+    // Salva apenas o quadro atual na coleção 'boards'
+    db.collection('boards').doc(currentBoardId).set({
+        title: boardTitle,
+        tasks_string: JSON.stringify(tasks),
+        columns_string: JSON.stringify(columns),
+        tags: tags,
+        members: currentBoardMembers,
+        owner: allBoardsData[currentBoardId].owner || currentUser.email,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true })
         .catch(err => {
             console.error("Erro ao salvar:", err);
             showSysAlert("Erro do Firebase: " + err.message);
@@ -402,56 +387,42 @@ function renderBoardsList() {
     }).join('');
 }
 
-async function createNewBoard() {
-    const title = await showSysPrompt("Nome do novo quadro:");
-
-    if (!title) {
-        return;
-    }
+async function createNewBoard(titleStr = null) {
+    const title = titleStr || await showSysPrompt("Nome do novo quadro:");
+    if (!title) return;
 
     const newId = 'board-' + Date.now();
-
-    boards.push({
-        id: newId,
-        title: title
-    });
-
-    allBoardsData[newId] = {
-        tasks: [],
-        columns: [
+    const newBoardData = {
+        title: title,
+        owner: currentUser.email,
+        members: [currentUser.email],
+        tasks_string: "[]",
+        columns_string: JSON.stringify([
             { id: 'todo', title: 'Pendências' },
             { id: 'doing', title: 'Em Andamento' },
             { id: 'done', title: 'Concluído' }
-        ]
+        ]),
+        tags: ["💻 Desenvolvimento", "🐛 Bug Fix", "🎨 Design"]
     };
 
-    switchBoard(newId);
+    // Cria direto na nuvem primeiro
+    await db.collection('boards').doc(newId).set(newBoardData);
+
+    boards.push({ id: newId, title: title, owner: currentUser.email });
+    allBoardsData[newId] = {
+        tasks: [],
+        columns: JSON.parse(newBoardData.columns_string),
+        members: [currentUser.email],
+        tags: newBoardData.tags,
+        owner: currentUser.email
+    };
+
+    loadBoardData(newId);
 }
 
 function switchBoard(boardId) {
-    const currentBoard = boards.find(b => b.id === currentBoardId);
-
-    if (currentBoard) {
-        currentBoard.title = document.getElementById('boardTitle').innerText;
-    }
-
-    allBoardsData[currentBoardId] = {
-        tasks: tasks,
-        columns: columns
-    };
-
-    currentBoardId = boardId;
-
-    tasks = allBoardsData[currentBoardId].tasks || [];
-    columns = allBoardsData[currentBoardId].columns || [];
-
-    const newBoard = boards.find(b => b.id === currentBoardId);
-    boardTitle = newBoard ? newBoard.title : 'Quadro';
-    document.getElementById('boardTitle').innerText = boardTitle;
-
-    render();
-    renderBoardsList();
-    syncToFirebase();
+    syncToFirebase(); // Salva o quadro atual antes de trocar
+    loadBoardData(boardId);
 }
 
 async function deleteCurrentBoard() {
@@ -460,12 +431,13 @@ async function deleteCurrentBoard() {
         return;
     }
 
-    const confirmed = await showSysConfirm("Tem certeza? Isso apagará todas as tarefas deste quadro permanentemente.", "Excluir Quadro");
+    const confirmed = await showSysConfirm("Tem certeza? Isso apagará este quadro para TODOS os membros.", "Excluir Quadro");
 
     if (confirmed) {
+        await db.collection('boards').doc(currentBoardId).delete();
         delete allBoardsData[currentBoardId];
         boards = boards.filter(b => b.id !== currentBoardId);
-        switchBoard(boards[0].id);
+        loadBoardData(boards[0].id);
     }
 }
 
@@ -1110,7 +1082,10 @@ function exportData() {
     if (currentBoardId) {
         allBoardsData[currentBoardId] = {
             tasks: tasks,
-            columns: columns
+            columns: columns,
+            tags: tags,
+            members: currentBoardMembers,
+            owner: allBoardsData[currentBoardId].owner
         };
     }
 
@@ -1160,22 +1135,15 @@ function importData(inputElement) {
 
             for (const [bId, bData] of Object.entries(importedData.allBoardsData)) {
                 allBoardsData[bId] = {
-                    tasks: JSON.parse(bData.tasks_string || "[]"),
-                    columns: JSON.parse(bData.columns_string || "[]")
+                    tasks: bData.tasks || JSON.parse(bData.tasks_string || "[]"),
+                    columns: bData.columns || JSON.parse(bData.columns_string || "[]"),
+                    members: bData.members || [currentUser.email],
+                    tags: bData.tags || tags,
+                    owner: bData.owner || currentUser.email
                 };
             }
 
-            tasks = allBoardsData[currentBoardId].tasks || [];
-            columns = allBoardsData[currentBoardId].columns || [];
-
-            const currentBoardObj = boards.find(b => b.id === currentBoardId);
-            boardTitle = currentBoardObj ? currentBoardObj.title : 'Meu Quadro';
-            document.getElementById('boardTitle').innerText = boardTitle;
-
-            renderBoardsList();
-            updateTagsDropdown();
-            render();
-
+            loadBoardData(currentBoardId);
             syncToFirebase();
 
             inputElement.value = '';
@@ -1458,4 +1426,63 @@ function fireConfetti() {
             requestAnimationFrame(frame);
         }
     }());
+}
+
+// --- LÓGICA DE COMPARTILHAMENTO ---
+function openShareModal() {
+    document.getElementById('shareOverlay').classList.add('active');
+    renderMembersList();
+}
+
+function closeShareModal() {
+    document.getElementById('shareOverlay').classList.remove('active');
+}
+
+async function addCollaborator() {
+    const emailInput = document.getElementById('collabEmail');
+    const email = emailInput.value.trim().toLowerCase();
+
+    if (!email) {
+        return showSysAlert("Digite um e-mail válido.");
+    }
+    if (currentBoardMembers.includes(email)) {
+        return showSysAlert("Este usuário já é membro deste quadro.");
+    }
+
+    currentBoardMembers.push(email);
+    allBoardsData[currentBoardId].members = currentBoardMembers;
+    emailInput.value = '';
+
+    syncToFirebase();
+    renderMembersList();
+    showSysAlert(`O quadro agora aparecerá para ${email} quando ele fizer login.`);
+}
+
+async function removeCollaborator(email) {
+    if (email === currentUser.email) {
+        return showSysAlert("Você não pode se remover. Se quiser sair, peça para outro membro excluir você ou apague o quadro.");
+    }
+
+    const confirmed = await showSysConfirm(`Remover ${email} deste quadro?`);
+    if (confirmed) {
+        currentBoardMembers = currentBoardMembers.filter(m => m !== email);
+        allBoardsData[currentBoardId].members = currentBoardMembers;
+        syncToFirebase();
+        renderMembersList();
+    }
+}
+
+function renderMembersList() {
+    const list = document.getElementById('membersList');
+    list.innerHTML = currentBoardMembers.map(m => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--bg-column); border-radius:8px; border: 1px solid var(--border);">
+            <div style="display:flex; align-items:center; gap: 8px;">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">
+                    ${m.charAt(0).toUpperCase()}
+                </div>
+                <span style="font-size: 0.9rem; font-weight: 500;">${m} ${m === currentUser.email ? '<span style="color:var(--text-sub); font-size:0.8rem;">(Você)</span>' : ''}</span>
+            </div>
+            ${m !== currentUser.email ? `<button style="background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:0.8rem;" onclick="removeCollaborator('${m}')">Remover</button>` : ''}
+        </div>
+    `).join('');
 }
