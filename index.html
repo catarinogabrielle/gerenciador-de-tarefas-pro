@@ -82,7 +82,7 @@
                         <label style="margin:0;">Descrição (Markdown Ativo ✨)</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <button class="btn-mic-small" onclick="startVoice('modalDescriptionInput', this)"
-                                title="Ditar descrição" id="descMicBtn">🎙️ Ditar</button>
+                                id="descMicBtn">🎙️ Ditar</button>
                             <div class="tab-buttons">
                                 <button type="button" class="tab-btn active" onclick="switchDescTab('write')"
                                     id="btnWrite">✏️ Escrever</button>
@@ -106,21 +106,30 @@
                     <div id="subtaskList" class="subtask-list"></div>
                 </div>
 
-                <div class="form-row" style="background: var(--bg-column); border-radius: 8px; margin-bottom: 20px;">
-                    <div class="form-group">
+                <div class="form-row"
+                    style="background: var(--bg-column); border-radius: 8px; margin-bottom: 20px; padding: 10px;">
+                    <div class="form-group" style="margin-bottom: 0;">
                         <label>Tag</label>
                         <div style="display: flex; gap: 5px;">
                             <select id="modalTagInput" style="flex:1;"></select>
+                            <input type="color" id="newTagColor" title="Cor da nova tag"
+                                style="width: 38px; height: 38px; padding: 0; border: none; border-radius: 4px; cursor: pointer;">
                             <button class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
                                 style="padding: 10px;">+</button>
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom: 0;">
                         <label>Prioridade</label>
                         <select id="modalPriorityInput">
                             <option value="Alta">Alta</option>
                             <option value="Média">Média</option>
                             <option value="Baixa">Baixa</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Responsável</label>
+                        <select id="modalAssigneeInput">
+                            <option value="">Sem responsável</option>
                         </select>
                     </div>
                 </div>
@@ -138,14 +147,27 @@
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
 
-                <div class="form-group">
-                    <label>Atividade</label>
+                <div class="tab-buttons" style="margin-bottom: 15px;">
+                    <button type="button" class="tab-btn active" onclick="switchBottomTab('comments')"
+                        id="btnTabComments">💬 Comentários</button>
+                    <button type="button" class="tab-btn" onclick="switchBottomTab('history')" id="btnTabHistory">⏱️
+                        Histórico</button>
+                </div>
+
+                <!-- Aba Comentários -->
+                <div id="tabComments">
                     <div id="commentsList" class="comments-list"></div>
                     <div style="display:flex; gap:8px; margin-top:10px;">
-                        <input type="text" id="commentInput" class="input-main" placeholder="Escreva um comentário..."
+                        <input type="text" id="commentInput" class="input-main"
+                            placeholder="Comente... (use @ para mencionar)"
                             onkeypress="if(event.key==='Enter') addComment()">
                         <button class="btn-secondary" onclick="addComment()">➤</button>
                     </div>
+                </div>
+
+                <!-- Aba Histórico -->
+                <div id="tabHistory" style="display: none;">
+                    <div id="historyList" class="history-list"></div>
                 </div>
 
             </div>
@@ -161,6 +183,28 @@
         </div>
     </div>
 
+    <!-- Modal Templates -->
+    <div class="modal-overlay" id="templateOverlay">
+        <div class="modal-box" style="max-width: 400px; padding: 20px;">
+            <h3 style="margin-top:0;">✨ Escolha um Template</h3>
+            <p style="color: var(--text-sub); font-size: 0.9rem;">Como você quer iniciar seu novo quadro?</p>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('vazio')">📄 <b>Quadro
+                        Básico</b><br><span style="font-size:0.75rem; font-weight:normal;">Pendências, Fazendo,
+                        Concluído</span></button>
+                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('sprint')">💻 <b>Sprint
+                        DEV</b><br><span style="font-size:0.75rem; font-weight:normal;">Backlog, Em Dev, Code Review,
+                        Deploy</span></button>
+                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('evento')">🎯 <b>Projeto
+                        / Evento</b><br><span style="font-size:0.75rem; font-weight:normal;">Planejamento, Pendências,
+                        Execução, Finalizado</span></button>
+            </div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 20px;"
+                onclick="closeTemplateModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Relatórios e Compartilhamento omitidos por brevidade (MANTENHA OS MESMOS MODAIS ANTERIORES AQUI) -->
     <div class="modal-overlay" id="statsOverlay">
         <div class="modal-box" style="max-width: 850px;">
             <div
@@ -170,35 +214,26 @@
             </div>
             <div class="modal-content-scroll" style="padding: 20px;">
                 <div class="kpi-grid">
-                    <div class="kpi-card">
-                        <span class="kpi-label">Total</span>
-                        <span class="kpi-value" id="kpi-total">0</span>
-                    </div>
-                    <div class="kpi-card" style="border-left: 4px solid #22c55e;">
-                        <span class="kpi-label">Concluídas</span>
-                        <span class="kpi-value" id="kpi-done">0</span>
-                    </div>
-                    <div class="kpi-card" style="border-left: 4px solid #ef4444;">
-                        <span class="kpi-label">Atrasadas</span>
-                        <span class="kpi-value" id="kpi-late">0</span>
-                    </div>
-                    <div class="kpi-card" style="border-left: 4px solid var(--accent);">
-                        <span class="kpi-label">Eficiência</span>
-                        <span class="kpi-value" id="kpi-avg">0%</span>
-                    </div>
+                    <div class="kpi-card"><span class="kpi-label">Total</span><span class="kpi-value"
+                            id="kpi-total">0</span></div>
+                    <div class="kpi-card" style="border-left: 4px solid #22c55e;"><span
+                            class="kpi-label">Concluídas</span><span class="kpi-value" id="kpi-done">0</span></div>
+                    <div class="kpi-card" style="border-left: 4px solid #ef4444;"><span
+                            class="kpi-label">Atrasadas</span><span class="kpi-value" id="kpi-late">0</span></div>
+                    <div class="kpi-card" style="border-left: 4px solid var(--accent)"><span
+                            class="kpi-label">Eficiência</span><span class="kpi-value" id="kpi-avg">0%</span></div>
                 </div>
-
                 <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
                     <div class="chart-container">
-                        <h4 class="chart-title">Distribuição por Tags</h4>
+                        <h4 class="chart-title">Tags</h4>
                         <div style="height: 220px;"><canvas id="tagsChart"></canvas></div>
                     </div>
                     <div class="chart-container">
-                        <h4 class="chart-title">Status do Workflow</h4>
+                        <h4 class="chart-title">Status</h4>
                         <div style="height: 220px;"><canvas id="statusChart"></canvas></div>
                     </div>
                     <div class="chart-container">
-                        <h4 class="chart-title">Carga por Prioridade</h4>
+                        <h4 class="chart-title">Prioridade</h4>
                         <div style="height: 220px;"><canvas id="priorityChart"></canvas></div>
                     </div>
                 </div>
@@ -221,12 +256,8 @@
                         <button class="btn-primary" style="padding: 10px;"
                             onclick="addCollaborator()">Adicionar</button>
                     </div>
-                    <span style="font-size: 0.75rem; color: var(--text-sub); margin-top: 5px;">Se o usuário criar uma
-                        conta com este e-mail no futuro, o quadro já estará lá.</span>
                 </div>
-
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-
                 <div class="form-group">
                     <label>Membros do Quadro</label>
                     <div id="membersList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
@@ -248,7 +279,7 @@
                 <label
                     style="font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase;">Meus
                     Quadros</label>
-                <button class="btn-icon-small" onclick="createNewBoard()" title="Novo Quadro">+</button>
+                <button class="btn-icon-small" onclick="openTemplateModal()" title="Novo Quadro">+</button>
             </div>
             <div id="boardsList" class="boards-list"></div>
         </div>
@@ -304,8 +335,6 @@
         <button class="btn-primary"
             style="width: 100%; margin-top: 12px; margin-bottom: 30px; background: transparent; border: 1px solid #ef4444; color: #ef4444;"
             onclick="logoutFirebase()">Sair da Conta</button>
-
-        <div style="margin-top: auto; font-size: 11px; color: #94a3b8; margin-top: 15px;">Gerenciador Pro | 2026</div>
     </nav>
 
     <header>
@@ -315,23 +344,27 @@
                 demandas</span>
         </div>
         <div class="filter-wrapper">
-            <button class="btn-secondary" onclick="addColumn()" style="padding: 6px 12px; height: 32px;">+
-                Coluna</button>
+            <button class="btn-secondary" onclick="toggleView()" id="btnViewToggle"
+                style="padding: 6px 12px; height: 32px;" title="Alternar visão Calendário">📅 Visão</button>
+            <button class="btn-secondary" onclick="addColumn()" id="btnAddColBtn"
+                style="padding: 6px 12px; height: 32px;">+ Coluna</button>
+            <button class="btn-secondary" onclick="toggleMyTasks()" id="btnMyTasks"
+                style="padding: 6px 12px; height: 32px;">🙋‍♂️ Minhas Tarefas</button>
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar..."
                 oninput="applyFilters()">
             <select id="filterTag" onchange="applyFilters()" class="filter-select">
                 <option value="all">🏷️ Tags</option>
             </select>
-            <select id="filterPriority" onchange="applyFilters()" class="filter-select">
-                <option value="all">📶 Prioridade</option>
-                <option value="Alta">🔴 Alta</option>
-                <option value="Média">🟡 Média</option>
-                <option value="Baixa">🔵 Baixa</option>
-            </select>
         </div>
     </header>
 
     <main class="board" id="boardMain"></main>
+
+    <!-- Visão Calendário -->
+    <main class="calendar-view" id="calendarMain" style="display: none;">
+        <div class="calendar-header" id="calendarHeader"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </main>
 
     <footer>
         <span style="font-weight: 700;">PROGRESSO</span>
@@ -341,6 +374,7 @@
         <span id="prog-val" style="font-weight: 700;">0%</span>
     </footer>
 
+    <!-- Modal de Sistema Corrigido -->
     <div class="sys-overlay" id="sysOverlay">
         <div class="sys-box">
             <h3 id="sysTitle" style="margin-top:0; margin-bottom: 10px;">Aviso</h3>
@@ -349,7 +383,7 @@
                 placeholder="Digite aqui...">
             <div class="sys-actions">
                 <button id="sysBtnCancel" class="btn-secondary">Cancelar</button>
-                <button id="sysBtnConfirm" class="btn-primary">Confirmar</button>
+                <button id="sysBtnConfirm" class="btn-primary">OK</button>
             </div>
         </div>
     </div>
@@ -357,7 +391,6 @@
     <script src="https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-firestore.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
