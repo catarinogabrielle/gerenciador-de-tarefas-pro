@@ -206,7 +206,6 @@
         </div>
     </div>
 
-    <!-- Modal de Compartilhamento -->
     <div class="modal-overlay" id="shareOverlay">
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
@@ -280,7 +279,8 @@
             </div>
         </div>
 
-        <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #10b981; border-color: #10b981;"
+        <button id="btnShareBoard" class="btn-primary"
+            style="width: 100%; margin-top: 15px; background: #10b981; border-color: #10b981;"
             onclick="openShareModal()">👥 Compartilhar Quadro</button>
         <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #3b82f6; border-color: #3b82f6;"
             onclick="openStatsModal()">📊 Relatórios</button>
@@ -298,7 +298,8 @@
             </div>
         </div>
 
-        <button class="btn-primary" style="width: 100%; margin-top: 12px; background: #ef4444; border-color: #ef4444;"
+        <button id="btnDeleteBoard" class="btn-primary"
+            style="width: 100%; margin-top: 12px; background: #ef4444; border-color: #ef4444;"
             onclick="deleteCurrentBoard()">🗑️ Excluir Quadro</button>
         <button class="btn-primary"
             style="width: 100%; margin-top: 12px; margin-bottom: 30px; background: transparent; border: 1px solid #ef4444; color: #ef4444;"

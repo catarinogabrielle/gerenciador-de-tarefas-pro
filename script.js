@@ -13,16 +13,20 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
 
+// Variável para armazenar o ouvinte em tempo real e podermos desligá-lo ao sair
+let dbListenerUnsubscribe = null;
+
 auth.onAuthStateChanged(user => {
     const loginScreen = document.getElementById('loginOverlay');
 
     if (user) {
         currentUser = user;
         loginScreen.style.display = 'none';
-        loadFromFirebase();
+        loadFromFirebase(); // Inicia o ouvinte em tempo real
     } else {
         currentUser = null;
         loginScreen.style.display = 'flex';
+        if (dbListenerUnsubscribe) dbListenerUnsubscribe(); // Desliga o ouvinte se deslogar
     }
 });
 
@@ -68,6 +72,7 @@ async function registerFirebase() {
 }
 
 function logoutFirebase() {
+    if (dbListenerUnsubscribe) dbListenerUnsubscribe();
     auth.signOut().then(() => {
         window.location.reload();
     });
@@ -84,7 +89,7 @@ let currentBoardId = null;
 let boardTitle = '';
 let columns = [];
 let tasks = [];
-let currentBoardMembers = []; // Nova variável para Colaboradores
+let currentBoardMembers = [];
 let tags = [
     "💻 Desenvolvimento",
     "🐛 Bug Fix",
@@ -107,12 +112,14 @@ let isTimerRunning = false;
 let tagsChartInstance = null;
 let statusChartInstance = null;
 
-// CARREGAR DADOS + MIGRAÇÃO
+// ==========================================
+// 🚀 NÚCLEO EM TEMPO REAL (MÁGICA DO FIREBASE)
+// ==========================================
 async function loadFromFirebase() {
     if (!currentUser) return;
 
     try {
-        // 1. SCRIPT DE MIGRAÇÃO: Puxa dados antigos e converte para a nova estrutura colaborativa
+        // SCRIPT DE MIGRAÇÃO LEGADO (Mantido para segurança)
         const oldDoc = await db.collection('users').doc(currentUser.uid).get();
         if (oldDoc.exists && oldDoc.data().boards) {
             const oldData = oldDoc.data();
@@ -127,36 +134,107 @@ async function loadFromFirebase() {
                     tags: oldData.tags || tags
                 });
             }
-            // Deleta o doc antigo para não rodar a migração duas vezes
             await db.collection('users').doc(currentUser.uid).delete();
             console.log("Migração para estrutura colaborativa concluída!");
         }
 
-        // 2. CARREGAR QUADROS COMPARTILHADOS
-        const snapshot = await db.collection('boards')
-            .where('members', 'array-contains', currentUser.email)
-            .get();
-
-        boards = [];
-        allBoardsData = {};
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            boards.push({ id: doc.id, title: data.title, owner: data.owner });
-            allBoardsData[doc.id] = {
-                tasks: JSON.parse(data.tasks_string || "[]"),
-                columns: JSON.parse(data.columns_string || "[]"),
-                members: data.members || [currentUser.email],
-                tags: data.tags || ["💻 Desenvolvimento", "🐛 Bug Fix", "🎨 Design"],
-                owner: data.owner
-            };
-        });
-
-        if (boards.length > 0) {
-            loadBoardData(boards[0].id);
-        } else {
-            await createNewBoard("Meu Primeiro Quadro");
+        // LIMPA OUVINTE ANTIGO SE EXISTIR
+        if (dbListenerUnsubscribe) {
+            dbListenerUnsubscribe();
         }
+
+        // OUVINTE EM TEMPO REAL (.onSnapshot)
+        dbListenerUnsubscribe = db.collection('boards')
+            .where('members', 'array-contains', currentUser.email)
+            .onSnapshot(snapshot => {
+                let newBoards = [];
+                let newAllBoardsData = {};
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
+                    newAllBoardsData[doc.id] = {
+                        tasks: data.tasks_string ? JSON.parse(data.tasks_string) : [],
+                        columns: data.columns_string ? JSON.parse(data.columns_string) : [],
+                        members: data.members || [currentUser.email],
+                        tags: data.tags || ["💻 Desenvolvimento", "🐛 Bug Fix", "🎨 Design"],
+                        owner: data.owner
+                    };
+                });
+
+                boards = newBoards;
+
+                // Previne tela travada se apagarem todos os quadros
+                if (boards.length === 0) {
+                    if (!document.getElementById('sysOverlay').classList.contains('active')) {
+                        createNewBoard("Meu Primeiro Quadro");
+                    }
+                    return;
+                }
+
+                renderBoardsList();
+
+                // Se acabou de logar ou o quadro atual foi deletado, carrega o primeiro
+                if (!currentBoardId || !boards.find(b => b.id === currentBoardId)) {
+                    allBoardsData = newAllBoardsData;
+                    loadBoardData(boards[0].id);
+                } else {
+                    // ATUALIZAÇÃO INTELIGENTE: Só re-renderiza se os dados recebidos forem diferentes dos da tela
+                    const activeData = newAllBoardsData[currentBoardId];
+                    allBoardsData = newAllBoardsData; // Sincroniza a memória global
+                    let needsRender = false;
+
+                    // Verifica Tarefas
+                    if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) {
+                        tasks = activeData.tasks;
+                        needsRender = true;
+                    }
+
+                    // Verifica Colunas
+                    if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) {
+                        columns = activeData.columns;
+                        needsRender = true;
+                    }
+
+                    // Verifica Tags
+                    if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) {
+                        tags = activeData.tags;
+                        updateTagsDropdown();
+                        needsRender = true;
+                    }
+
+                    // Verifica Título do Quadro
+                    const boardObj = boards.find(b => b.id === currentBoardId);
+                    if (boardObj.title !== boardTitle) {
+                        boardTitle = boardObj.title;
+                        document.getElementById('boardTitle').innerText = boardTitle;
+                    }
+
+                    // Verifica Colaboradores
+                    if (JSON.stringify(activeData.members) !== JSON.stringify(currentBoardMembers)) {
+                        currentBoardMembers = activeData.members;
+                        if (document.getElementById('shareOverlay').classList.contains('active')) {
+                            renderMembersList();
+                        }
+                    }
+
+                    // Atualiza Permissões (Esconde/Mostra botões)
+                    const isOwner = activeData.owner === currentUser.email;
+                    const btnShare = document.getElementById('btnShareBoard');
+                    if (btnShare) btnShare.style.display = isOwner ? 'block' : 'none';
+                    const btnDelete = document.getElementById('btnDeleteBoard');
+                    if (btnDelete) btnDelete.style.display = isOwner ? 'block' : 'none';
+
+                    // Só chama o renderizador visual se algo nas tarefas ou colunas mudou de verdade
+                    if (needsRender) {
+                        render();
+                    }
+                }
+
+            }, error => {
+                console.error("Erro no ouvinte em tempo real:", error);
+                showSysAlert("Erro de conexão ao vivo. Recarregue a página.");
+            });
 
     } catch (error) {
         console.error("Erro loadFromFirebase:", error);
@@ -184,18 +262,24 @@ function loadBoardData(boardId) {
     renderBoardsList();
     updateTagsDropdown();
     render();
+
+    // TRAVA DE SEGURANÇA NA INTERFACE (Apenas Dono)
+    const isOwner = bData.owner === currentUser.email;
+    const btnShare = document.getElementById('btnShareBoard');
+    if (btnShare) btnShare.style.display = isOwner ? 'block' : 'none';
+    const btnDelete = document.getElementById('btnDeleteBoard');
+    if (btnDelete) btnDelete.style.display = isOwner ? 'block' : 'none';
 }
 
 function syncToFirebase() {
     if (!currentUser || !currentBoardId) return;
 
-    // Atualiza memória local
+    // Atualiza a memória local (o Snapshot fará o match e impedirá a tela de piscar)
     allBoardsData[currentBoardId].tasks = tasks;
     allBoardsData[currentBoardId].columns = columns;
     allBoardsData[currentBoardId].tags = tags;
     allBoardsData[currentBoardId].members = currentBoardMembers;
 
-    // Salva apenas o quadro atual na coleção 'boards'
     db.collection('boards').doc(currentBoardId).set({
         title: boardTitle,
         tasks_string: JSON.stringify(tasks),
@@ -210,6 +294,7 @@ function syncToFirebase() {
             showSysAlert("Erro do Firebase: " + err.message);
         });
 }
+// ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', theme);
@@ -405,9 +490,7 @@ async function createNewBoard(titleStr = null) {
         tags: ["💻 Desenvolvimento", "🐛 Bug Fix", "🎨 Design"]
     };
 
-    // Cria direto na nuvem primeiro
-    await db.collection('boards').doc(newId).set(newBoardData);
-
+    // Criação otimista para ser rápido
     boards.push({ id: newId, title: title, owner: currentUser.email });
     allBoardsData[newId] = {
         tasks: [],
@@ -417,27 +500,33 @@ async function createNewBoard(titleStr = null) {
         owner: currentUser.email
     };
 
-    loadBoardData(newId);
+    await db.collection('boards').doc(newId).set(newBoardData);
+    loadBoardData(newId); // Muda a interface pro novo quadro instantaneamente
 }
 
 function switchBoard(boardId) {
-    syncToFirebase(); // Salva o quadro atual antes de trocar
+    syncToFirebase();
     loadBoardData(boardId);
 }
 
 async function deleteCurrentBoard() {
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) {
+        return showSysAlert("Apenas o criador do quadro pode excluí-lo permanentemente.");
+    }
+
     if (boards.length <= 1) {
-        await showSysAlert("Você não pode excluir o único quadro restante.");
-        return;
+        return showSysAlert("Você não pode excluir o único quadro restante.");
     }
 
     const confirmed = await showSysConfirm("Tem certeza? Isso apagará este quadro para TODOS os membros.", "Excluir Quadro");
 
     if (confirmed) {
-        await db.collection('boards').doc(currentBoardId).delete();
-        delete allBoardsData[currentBoardId];
-        boards = boards.filter(b => b.id !== currentBoardId);
-        loadBoardData(boards[0].id);
+        const idToDelete = currentBoardId;
+        // Pula para o primeiro quadro disponível para evitar que a tela quebre
+        currentBoardId = boards.find(b => b.id !== idToDelete).id;
+
+        await db.collection('boards').doc(idToDelete).delete();
+        loadBoardData(currentBoardId);
     }
 }
 
@@ -735,7 +824,7 @@ function setupCardDragAndDrop() {
                 });
 
                 tasks = [...reorderedTasks, ...Array.from(visibleTasksMap.values())];
-                save();
+                save(); // Chama render() e syncToFirebase(), o Snapshot cuidará do resto invisivelmente
             }
         });
     });
@@ -1439,6 +1528,11 @@ function closeShareModal() {
 }
 
 async function addCollaborator() {
+    // TRAVA DE SEGURANÇA NA FUNÇÃO (Apenas Dono)
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) {
+        return showSysAlert("Apenas o criador (dono) do quadro pode adicionar colaboradores.");
+    }
+
     const emailInput = document.getElementById('collabEmail');
     const email = emailInput.value.trim().toLowerCase();
 
@@ -1459,8 +1553,13 @@ async function addCollaborator() {
 }
 
 async function removeCollaborator(email) {
+    // TRAVA DE SEGURANÇA NA FUNÇÃO (Apenas Dono)
+    if (allBoardsData[currentBoardId].owner !== currentUser.email) {
+        return showSysAlert("Apenas o criador do quadro pode remover colaboradores.");
+    }
+
     if (email === currentUser.email) {
-        return showSysAlert("Você não pode se remover. Se quiser sair, peça para outro membro excluir você ou apague o quadro.");
+        return showSysAlert("Você não pode se remover.");
     }
 
     const confirmed = await showSysConfirm(`Remover ${email} deste quadro?`);
