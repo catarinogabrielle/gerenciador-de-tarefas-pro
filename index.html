@@ -33,7 +33,6 @@
             <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="loginFirebase()">Entrar</button>
             <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="registerFirebase()">Criar
                 Conta</button>
-
             <div id="loginError"
                 style="color: #ef4444; font-size: 0.8rem; margin-top: 10px; text-align: center; display: none;">Erro ao
                 fazer login.</div>
@@ -45,13 +44,11 @@
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
-
             <div class="modal-header-fixed">
                 <h3 id="modalTitle" style="margin:0;">Nova Tarefa</h3>
             </div>
 
             <div class="modal-content-scroll">
-
                 <div class="form-group">
                     <label>Título da Tarefa</label>
                     <div style="display: flex; gap: 8px;">
@@ -63,7 +60,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Capa</label>
+                    <label>Capa Visual</label>
                     <div class="cover-upload-area" id="coverUploadArea"
                         onclick="document.getElementById('fileCoverInput').click()">
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
@@ -76,6 +73,46 @@
                     <input type="hidden" id="modalCoverInput">
                 </div>
 
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tag & Cor</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="modalTagInput" class="input-main" style="flex:1;"
+                                onchange="updateColorPicker()"></select>
+                            <div class="color-picker-wrapper" title="Alterar cor da tag">
+                                <input type="color" id="newTagColor" onchange="updateCurrentTagColor()">
+                            </div>
+                            <button class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
+                                style="padding: 0 14px; height: 42px; margin:0;">+</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Prioridade</label>
+                        <select id="modalPriorityInput" class="input-main">
+                            <option value="Alta">Alta</option>
+                            <option value="Média">Média</option>
+                            <option value="Baixa">Baixa</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Responsável</label>
+                        <select id="modalAssigneeInput" class="input-main">
+                            <option value="">Sem responsável</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Início</label>
+                        <input type="date" id="modalDateStart" class="input-main">
+                    </div>
+                    <div class="form-group">
+                        <label>Entrega</label>
+                        <input type="date" id="modalDateEnd" class="input-main">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <div
                         style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
@@ -83,11 +120,11 @@
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <button class="btn-mic-small" onclick="startVoice('modalDescriptionInput', this)"
                                 id="descMicBtn">🎙️ Ditar</button>
-                            <div class="tab-buttons">
-                                <button type="button" class="tab-btn active" onclick="switchDescTab('write')"
+                            <div class="tab-buttons-small">
+                                <button type="button" class="tab-btn-small active" onclick="switchDescTab('write')"
                                     id="btnWrite">✏️ Escrever</button>
-                                <button type="button" class="tab-btn" onclick="switchDescTab('preview')"
-                                    id="btnPreview">👁️ Visualizar</button>
+                                <button type="button" class="tab-btn-small" onclick="switchDescTab('preview')"
+                                    id="btnPreview">👁️ Ver</button>
                             </div>
                         </div>
                     </div>
@@ -99,57 +136,13 @@
                 <div class="form-group">
                     <label>Checklist</label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="subtaskInput" class="input-main" placeholder="Adicionar item..."
+                        <input type="text" id="subtaskInput" class="input-main" placeholder="Adicionar sub-tarefa..."
                             onkeypress="handleSubtaskEnter(event)">
                         <button class="btn-secondary" onclick="addSubtask()" style="padding: 0 16px;">+</button>
                     </div>
                     <div id="subtaskList" class="subtask-list"></div>
                 </div>
 
-                <!-- NOVA ÁREA DE CONFIGURAÇÃO DA TAREFA (Estilizada e sem "esmagar") -->
-                <div class="task-config-box">
-                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-                        <label>Tag & Cor</label>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <select id="modalTagInput" class="input-main" style="flex:1;"
-                                onchange="updateColorPicker()"></select>
-                            <div class="color-picker-wrapper" title="Alterar cor da tag selecionada">
-                                <input type="color" id="newTagColor" onchange="updateCurrentTagColor()">
-                            </div>
-                            <button class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
-                                style="padding: 0 12px; height: 38px;">+</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 130px;">
-                        <label>Prioridade</label>
-                        <select id="modalPriorityInput" class="input-main">
-                            <option value="Alta">Alta</option>
-                            <option value="Média">Média</option>
-                            <option value="Baixa">Baixa</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 180px;">
-                        <label>Responsável</label>
-                        <select id="modalAssigneeInput" class="input-main">
-                            <option value="">Sem responsável</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Início</label>
-                        <input type="date" id="modalDateStart" class="input-main">
-                    </div>
-                    <div class="form-group">
-                        <label>Entrega</label>
-                        <input type="date" id="modalDateEnd" class="input-main">
-                    </div>
-                </div>
-
-                <!-- NOVAS ABAS ESTILIZADAS -->
                 <div class="modal-tabs">
                     <button type="button" class="modal-tab active" onclick="switchBottomTab('comments')"
                         id="btnTabComments">💬 Comentários</button>
@@ -178,7 +171,7 @@
                     style="display: none;">🗑️ Excluir Tarefa</button>
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-                    <button class="btn-primary" id="modalSaveBtn" onclick="saveTaskBtnClick()">Salvar</button>
+                    <button class="btn-primary" id="modalSaveBtn" onclick="saveTaskBtnClick()">Salvar Tarefa</button>
                 </div>
             </div>
         </div>
@@ -190,58 +183,55 @@
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
             <p style="color: var(--text-sub); font-size: 0.9rem;">Como você quer iniciar seu novo quadro?</p>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('vazio')">📄 <b>Quadro
-                        Básico</b><br><span style="font-size:0.75rem; font-weight:normal;">Pendências, Fazendo,
-                        Concluído</span></button>
-                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('sprint')">💻 <b>Sprint
-                        DEV</b><br><span style="font-size:0.75rem; font-weight:normal;">Backlog, Em Dev, Code Review,
-                        Deploy</span></button>
-                <button class="btn-secondary" style="text-align: left;" onclick="applyTemplate('evento')">🎯 <b>Projeto
-                        / Evento</b><br><span style="font-size:0.75rem; font-weight:normal;">Planejamento, Pendências,
-                        Execução, Finalizado</span></button>
+                <button class="btn-secondary template-btn" onclick="applyTemplate('vazio')">📄 <b>Quadro
+                        Básico</b><br>Pendências, Fazendo, Concluído</button>
+                <button class="btn-secondary template-btn" onclick="applyTemplate('sprint')">💻 <b>Sprint
+                        DEV</b><br>Backlog, Em Dev, Code Review, Deploy</button>
+                <button class="btn-secondary template-btn" onclick="applyTemplate('evento')">🎯 <b>Projeto /
+                        Evento</b><br>Planejamento, Pendências, Execução, Finalizado</button>
             </div>
             <button class="btn-secondary" style="width: 100%; margin-top: 20px;"
                 onclick="closeTemplateModal()">Cancelar</button>
         </div>
     </div>
 
-    <!-- Modal Relatórios NOVO E AMPLIADO -->
+    <!-- Modal Relatórios -->
     <div class="modal-overlay" id="statsOverlay">
         <div class="modal-box" style="max-width: 1000px; width: 95%;">
             <div
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid var(--border);">
                 <h3 style="margin:0;">📊 Dashboards de Performance</h3>
-                <button class="btn-secondary" onclick="closeStatsModal()" style="padding: 6px 12px;">Fechar</button>
+                <button class="btn-secondary" onclick="closeStatsModal()"
+                    style="padding: 6px 12px; height: auto;">Fechar</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px 30px;">
                 <div class="kpi-grid">
                     <div class="kpi-card"><span class="kpi-label">Total de Tarefas</span><span class="kpi-value"
                             id="kpi-total">0</span></div>
-                    <div class="kpi-card" style="border-left: 4px solid #22c55e;"><span
-                            class="kpi-label">Concluídas</span><span class="kpi-value" id="kpi-done">0</span></div>
-                    <div class="kpi-card" style="border-left: 4px solid #ef4444;"><span
-                            class="kpi-label">Atrasadas</span><span class="kpi-value" id="kpi-late">0</span></div>
-                    <div class="kpi-card" style="border-left: 4px solid var(--accent)"><span
-                            class="kpi-label">Eficiência Geral</span><span class="kpi-value" id="kpi-avg">0%</span>
-                    </div>
+                    <div class="kpi-card kpi-success"><span class="kpi-label">Concluídas</span><span class="kpi-value"
+                            id="kpi-done">0</span></div>
+                    <div class="kpi-card kpi-danger"><span class="kpi-label">Atrasadas</span><span class="kpi-value"
+                            id="kpi-late">0</span></div>
+                    <div class="kpi-card kpi-warning"><span class="kpi-label">Eficiência Geral</span><span
+                            class="kpi-value" id="kpi-avg">0%</span></div>
                 </div>
 
                 <div class="charts-grid">
-                    <div class="chart-container" style="grid-column: span 2;">
-                        <h4 class="chart-title">Desempenho por Responsável</h4>
-                        <div style="height: 250px;"><canvas id="assigneeChart"></canvas></div>
+                    <div class="chart-container" style="grid-column: 1 / -1;">
+                        <h4 class="chart-title">🏆 Entregas por Responsável</h4>
+                        <div style="height: 280px; width: 100%;"><canvas id="assigneeChart"></canvas></div>
                     </div>
                     <div class="chart-container">
                         <h4 class="chart-title">Distribuição de Tags</h4>
-                        <div style="height: 250px;"><canvas id="tagsChart"></canvas></div>
+                        <div style="height: 250px; width: 100%;"><canvas id="tagsChart"></canvas></div>
                     </div>
                     <div class="chart-container">
                         <h4 class="chart-title">Carga por Prioridade</h4>
-                        <div style="height: 250px;"><canvas id="priorityChart"></canvas></div>
+                        <div style="height: 250px; width: 100%;"><canvas id="priorityChart"></canvas></div>
                     </div>
-                    <div class="chart-container" style="grid-column: span 2;">
+                    <div class="chart-container" style="grid-column: 1 / -1;">
                         <h4 class="chart-title">Status do Workflow (Colunas)</h4>
-                        <div style="height: 220px;"><canvas id="statusChart"></canvas></div>
+                        <div style="height: 250px; width: 100%;"><canvas id="statusChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -253,7 +243,7 @@
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin:0;">👥 Compartilhar Quadro</h3>
-                <button class="btn-secondary" style="padding: 4px 8px; font-size: 1rem;"
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 1rem; height: auto;"
                     onclick="closeShareModal()">×</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px;">
@@ -261,15 +251,13 @@
                     <label>Adicionar Colaborador (E-mail)</label>
                     <div style="display: flex; gap: 8px;">
                         <input type="email" id="collabEmail" class="input-main" placeholder="email@exemplo.com">
-                        <button class="btn-primary" style="padding: 10px;"
-                            onclick="addCollaborator()">Adicionar</button>
+                        <button class="btn-primary" style="padding: 0 20px;" onclick="addCollaborator()">Add</button>
                     </div>
                 </div>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
                 <div class="form-group">
                     <label>Membros do Quadro</label>
-                    <div id="membersList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                    </div>
+                    <div id="membersList" class="members-list"></div>
                 </div>
             </div>
         </div>
@@ -298,8 +286,10 @@
             <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub);">POMODORO</span>
             <div class="timer-display" id="pomodoroTimer">25:00</div>
             <div style="display: flex; gap: 5px; margin-top: 8px;">
-                <button class="btn-secondary" style="flex:1; padding: 5px;" onclick="startTimer()">▶</button>
-                <button class="btn-secondary" style="flex:1; padding: 5px;" onclick="resetTimer()">↺</button>
+                <button class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
+                    onclick="startTimer()">▶</button>
+                <button class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
+                    onclick="resetTimer()">↺</button>
             </div>
         </div>
 
@@ -329,9 +319,9 @@
             <label
                 style="font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase;">Backup</label>
             <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button class="btn-secondary" style="flex:1; font-size: 0.8rem;" onclick="exportData()">📥
-                    Baixar</button>
-                <button class="btn-secondary" style="flex:1; font-size: 0.8rem;"
+                <button class="btn-secondary" style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;"
+                    onclick="exportData()">📥 Baixar</button>
+                <button class="btn-secondary" style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;"
                     onclick="document.getElementById('fileInput').click()">📤 Restaurar</button>
                 <input type="file" id="fileInput" style="display: none;" onchange="importData(this)">
             </div>
@@ -352,16 +342,15 @@
                 demandas</span>
         </div>
         <div class="filter-wrapper">
-            <button class="btn-secondary" onclick="toggleView()" id="btnViewToggle"
-                style="padding: 6px 12px; height: 32px;" title="Alternar visão Calendário">📅 Visão</button>
-            <button class="btn-secondary" onclick="addColumn()" id="btnAddColBtn"
-                style="padding: 6px 12px; height: 32px;">+ Coluna</button>
-            <button class="btn-secondary" onclick="toggleMyTasks()" id="btnMyTasks"
-                style="padding: 6px 12px; height: 32px;">🙋‍♂️ Minhas Tarefas</button>
+            <button class="btn-secondary header-btn" onclick="toggleView()" id="btnViewToggle"
+                title="Alternar visão Calendário">📅 Visão</button>
+            <button class="btn-secondary header-btn" onclick="addColumn()" id="btnAddColBtn">+ Coluna</button>
+            <button class="btn-secondary header-btn" onclick="toggleMyTasks()" id="btnMyTasks">🙋‍♂️ Minhas
+                Tarefas</button>
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar..."
                 oninput="applyFilters()">
             <select id="filterTag" onchange="applyFilters()" class="filter-select">
-                <option value="all">🏷️ Tags</option>
+                <option value="all">🏷️ Todas as Tags</option>
             </select>
         </div>
     </header>

@@ -63,9 +63,17 @@ let boardTitle = '';
 let columns = [];
 let tasks = [];
 let currentBoardMembers = [];
-let tags = [
-    { name: "💻 Dev", color: "#3b82f6" }, { name: "🐛 Bug", color: "#ef4444" }, { name: "🎨 Design", color: "#8b5cf6" }
+
+// Lista Padrão de Tags (Agora garantida de aparecer sempre)
+const defaultTags = [
+    { name: "💻 Desenvolvimento", color: "#3b82f6" },
+    { name: "🐛 Bug Fix", color: "#ef4444" },
+    { name: "🧪 Teste", color: "#10b981" },
+    { name: "📅 Reunião", color: "#8b5cf6" },
+    { name: "🚀 Deploy", color: "#f59e0b" },
+    { name: "🎨 Design", color: "#ec4899" }
 ];
+let tags = [...defaultTags];
 
 let currentTagFilter = 'all';
 let currentPriorityFilter = 'all';
@@ -106,10 +114,10 @@ function showSysModal(title, message, type = 'alert', placeholder = '') {
         inputEl.style.display = type === 'prompt' ? 'block' : 'none';
         inputEl.placeholder = placeholder;
 
-        btnCancel.style.display = 'block';
+        btnCancel.style.display = 'flex';
         btnCancel.innerText = type === 'alert' ? 'Fechar' : 'Cancelar';
 
-        btnConfirm.style.display = type === 'alert' ? 'none' : 'block';
+        btnConfirm.style.display = type === 'alert' ? 'none' : 'flex';
         btnConfirm.innerText = 'OK';
         btnConfirm.className = 'btn-primary';
 
@@ -150,8 +158,24 @@ async function loadFromFirebase() {
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    let parsedTags = data.tags || tags;
-                    parsedTags = parsedTags.map(t => typeof t === 'string' ? { name: t, color: '#3b82f6' } : t);
+
+                    // Tratamento e Fusão de Tags
+                    let dbTags = data.tags || [];
+                    let parsedTags = dbTags.map(t => {
+                        let tagObj = typeof t === 'string' ? { name: t, color: '#3b82f6' } : { ...t };
+                        if (tagObj.name.includes('Treino')) {
+                            tagObj.name = '🧪 Teste';
+                            tagObj.color = '#10b981';
+                        }
+                        return tagObj;
+                    });
+
+                    // INJEÇÃO AUTOMÁTICA: Garante que as tags default sempre existam
+                    defaultTags.forEach(defTag => {
+                        if (!parsedTags.find(pt => pt.name === defTag.name)) {
+                            parsedTags.push({ ...defTag });
+                        }
+                    });
 
                     newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
                     newAllBoardsData[doc.id] = {
@@ -220,7 +244,7 @@ function loadBoardData(boardId) {
 
     tasks = bData.tasks || [];
     columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
-    tags = bData.tags || [];
+    tags = bData.tags || [...defaultTags];
     currentBoardMembers = bData.members || [currentUser.email];
     boardTitle = boards.find(b => b.id === boardId)?.title || 'Meu Quadro';
     document.getElementById('boardTitle').innerText = boardTitle;
@@ -277,7 +301,7 @@ async function applyTemplate(type) {
     const newId = 'board-' + Date.now();
     const newBoardData = {
         title: title, owner: currentUser.email, members: [currentUser.email],
-        tasks_string: "[]", columns_string: JSON.stringify(initCols), tags: tags
+        tasks_string: "[]", columns_string: JSON.stringify(initCols), tags: [...defaultTags]
     };
 
     currentBoardId = newId;
@@ -305,7 +329,7 @@ async function deleteCurrentBoard() {
 }
 
 // ==========================================
-// INTERFACE PRINCIPAL
+// INTERFACE PRINCIPAL E RENDER DO CARD
 // ==========================================
 function render() {
     if (isCalendarView) { renderCalendar(); return; }
@@ -350,10 +374,19 @@ function render() {
             card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id; card.onclick = () => openModal(t.id);
 
             let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover">` : '';
-            let dateHtml = t.endDate ? `<div class="${(t.endDate < getTodayString() && !isDoneCol) ? 'date-display overdue' : 'date-display'}">${(t.endDate < getTodayString() && !isDoneCol) ? '⚠️' : '📅'} ${formatDate(t.endDate)}</div>` : '';
+
+            let dateHtml = '';
+            if (t.startDate || t.endDate) {
+                let sDate = formatDate(t.startDate);
+                let eDate = formatDate(t.endDate);
+                let displayDate = sDate && eDate ? `${sDate} - ${eDate}` : (sDate || eDate);
+                const isOverdue = t.endDate && t.endDate < getTodayString() && !isDoneCol;
+                dateHtml = `<div class="date-display ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : '📅'} ${displayDate}</div>`;
+            }
 
             const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
-            const prioColor = t.priority === 'Alta' ? '#ef4444' : t.priority === 'Média' ? '#f59e0b' : '#6366f1';
+
+            let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
 
             let avatarName = t.assignee ? t.assignee.split('@')[0] : '';
             let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${avatarName.charAt(0).toUpperCase()}</div>` : '';
@@ -370,7 +403,10 @@ function render() {
                 <div class="tag-row"><div class="tag" style="background:${tagObj.color}">${tagObj.name}</div>${dateHtml}</div>
                 <span class="card-text">${t.text}</span>
                 ${progressHtml}
-                <div class="card-footer"><div class="prio-indicator"><div class="dot" style="background:${prioColor}"></div><span>${t.priority}</span></div>${avatarHtml}</div>
+                <div class="card-footer">
+                    ${priorityBadge}
+                    ${avatarHtml}
+                </div>
             `;
             container.appendChild(card);
         });
@@ -437,7 +473,7 @@ function openModal(taskId = null, initialStatus = null) {
         editingTaskId = taskId; const task = tasks.find(t => t.id === taskId);
         if (!task) return;
         document.getElementById('modalTitle').innerText = "Detalhes da Tarefa";
-        document.getElementById('modalSaveBtn').innerText = "Atualizar";
+        document.getElementById('modalSaveBtn').innerText = "Atualizar Tarefa";
         document.getElementById('modalDeleteBtn').style.display = 'block';
 
         document.getElementById('modalTaskInput').value = task.text;
@@ -445,7 +481,7 @@ function openModal(taskId = null, initialStatus = null) {
         document.getElementById('modalTagInput').value = task.tag?.name || task.tag || '';
         updateColorPicker();
 
-        document.getElementById('modalPriorityInput').value = task.priority;
+        document.getElementById('modalPriorityInput').value = task.priority || 'Média';
         document.getElementById('modalAssigneeInput').value = task.assignee || '';
         document.getElementById('modalDateStart').value = task.startDate || '';
         document.getElementById('modalDateEnd').value = task.endDate || '';
@@ -457,7 +493,7 @@ function openModal(taskId = null, initialStatus = null) {
     } else {
         editingTaskId = null;
         document.getElementById('modalTitle').innerText = "Nova Tarefa";
-        document.getElementById('modalSaveBtn').innerText = "Salvar";
+        document.getElementById('modalSaveBtn').innerText = "Criar Tarefa";
         document.getElementById('modalDeleteBtn').style.display = 'none';
         tempSubtasks = []; tempComments = []; tempHistory = [];
         document.getElementById('modalDateStart').value = getTodayString();
@@ -477,7 +513,7 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 
 async function saveTaskBtnClick() {
     const text = document.getElementById('modalTaskInput').value.trim();
-    if (!text) { await showSysAlert("Título obrigatório."); return; }
+    if (!text) { await showSysAlert("O Título da tarefa é obrigatório."); return; }
 
     const tagSelectVal = document.getElementById('modalTagInput').value;
     const tagObj = tags.find(t => t.name === tagSelectVal) || { name: tagSelectVal, color: '#3b82f6' };
@@ -509,7 +545,7 @@ async function saveTaskBtnClick() {
 
 async function deleteTaskFromModal() {
     if (!editingTaskId) return;
-    const ok = await showSysConfirm("Excluir tarefa permanentemente?");
+    const ok = await showSysConfirm("Tem certeza absoluta que deseja excluir esta tarefa permanentemente?");
     if (ok) { tasks = tasks.filter(t => t.id !== editingTaskId); save(); closeModal(); }
 }
 
@@ -519,7 +555,7 @@ function updateTagsDropdown() {
     const currVal = m.value;
 
     m.innerHTML = tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-    f.innerHTML = `<option value="all">🏷️ Tags</option>` + tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+    f.innerHTML = `<option value="all">🏷️ Todas as Tags</option>` + tags.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
 
     if (currVal && tags.find(t => t.name === currVal)) {
         m.value = currVal;
@@ -634,7 +670,7 @@ function addSubtask() { let i = document.getElementById('subtaskInput'); if (i.v
 function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
 function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
 function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
-function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
+function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6; flex:1;' : 'flex:1;'}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
 
 function applyFilters() { currentTagFilter = document.getElementById('filterTag').value; currentPriorityFilter = document.getElementById('filterPriority').value; searchTerm = document.getElementById('searchInput').value.toLowerCase(); render(); }
 function toggleMyTasks() { filterMyTasksOnly = !filterMyTasksOnly; const btn = document.getElementById('btnMyTasks'); btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent'; btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)'; render(); }
@@ -657,7 +693,7 @@ function renderCalendar() {
     document.getElementById('boardMain').style.display = 'none'; document.getElementById('calendarMain').style.display = 'flex';
     const head = document.getElementById('calendarHeader'); const grid = document.getElementById('calendarGrid');
     const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2><div><button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button><button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button><button class="btn-secondary" onclick="changeMonth(1)">➡️</button></div>`;
+    head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2><div style="display:flex; gap:10px;"><button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button><button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button><button class="btn-secondary" onclick="changeMonth(1)">➡️</button></div>`;
     grid.innerHTML = '';
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
@@ -681,7 +717,7 @@ async function removeCollaborator(e) {
     if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode remover.");
     if (e !== currentUser.email && await showSysConfirm(`Remover ${e}?`)) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); }
 }
-function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer;">Remover</button>` : ''}</div>`).join(''); }
+function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
 // --- DASHBOARDS / RELATORIOS MELHORADOS ---
 function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
@@ -694,18 +730,15 @@ function renderCharts() {
     const stats = { total: tasks.length, done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
     const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0);
 
-    // Preparar dados de Desempenho por Responsável
     const assigneeData = {};
     currentBoardMembers.forEach(m => assigneeData[m] = { total: 0, done: 0 });
     assigneeData['Sem Responsável'] = { total: 0, done: 0 };
 
     tasks.forEach(t => {
-        // Lógica de Prioridade e Tags
         const tName = t.tag?.name || t.tag;
         if (tagCounts[tName] !== undefined) tagCounts[tName]++;
         if (stats.priority[t.priority] !== undefined) stats.priority[t.priority]++;
 
-        // Lógica de Responsáveis
         const assign = t.assignee || 'Sem Responsável';
         if (!assigneeData[assign]) assigneeData[assign] = { total: 0, done: 0 };
         assigneeData[assign].total++;
@@ -720,7 +753,6 @@ function renderCharts() {
     const textColor = theme === 'dark' ? '#e6edf3' : '#18181b';
     const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4'];
 
-    // Gráfico de Tags
     if (tagsChartInstance) tagsChartInstance.destroy();
     tagsChartInstance = new Chart(document.getElementById('tagsChart'), {
         type: 'doughnut',
@@ -728,7 +760,6 @@ function renderCharts() {
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: textColor, font: { size: 11 } } } } }
     });
 
-    // Gráfico de Colunas
     if (statusChartInstance) statusChartInstance.destroy();
     statusChartInstance = new Chart(document.getElementById('statusChart'), {
         type: 'bar',
@@ -736,15 +767,13 @@ function renderCharts() {
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, plugins: { legend: { display: false } } }
     });
 
-    // Gráfico de Prioridade
     if (priorityChartInstance) priorityChartInstance.destroy();
     priorityChartInstance = new Chart(document.getElementById('priorityChart'), {
         type: 'polarArea',
-        data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(99, 102, 241, 0.7)'] }] },
+        data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(59, 130, 246, 0.7)'] }] },
         options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(128,128,128,0.2)' }, ticks: { display: false } } }, plugins: { legend: { position: 'right', labels: { color: textColor, font: { size: 11 } } } } }
     });
 
-    // NOVO: Gráfico de Responsáveis
     const assignLabels = Object.keys(assigneeData);
     const assignTotal = assignLabels.map(l => assigneeData[l].total);
     const assignDone = assignLabels.map(l => assigneeData[l].done);
@@ -755,8 +784,8 @@ function renderCharts() {
         data: {
             labels: assignLabels.map(l => l.split('@')[0]),
             datasets: [
-                { label: 'Total Assumido', data: assignTotal, backgroundColor: '#6366f1', borderRadius: 4 },
-                { label: 'Entregue (Concluído)', data: assignDone, backgroundColor: '#10b981', borderRadius: 4 }
+                { label: 'Total de Tarefas', data: assignTotal, backgroundColor: '#6366f1', borderRadius: 4 },
+                { label: 'Entregues (Concluído)', data: assignDone, backgroundColor: '#10b981', borderRadius: 4 }
             ]
         },
         options: {
