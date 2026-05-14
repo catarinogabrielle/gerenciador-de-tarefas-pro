@@ -85,6 +85,7 @@ let isTimerRunning = false;
 let tagsChartInstance = null;
 let statusChartInstance = null;
 let priorityChartInstance = null;
+let assigneeChartInstance = null;
 
 // ==========================================
 // MODAIS DO SISTEMA 
@@ -353,13 +354,15 @@ function render() {
 
             const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
             const prioColor = t.priority === 'Alta' ? '#ef4444' : t.priority === 'Média' ? '#f59e0b' : '#6366f1';
-            let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${t.assignee.charAt(0).toUpperCase()}</div>` : '';
+
+            let avatarName = t.assignee ? t.assignee.split('@')[0] : '';
+            let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${avatarName.charAt(0).toUpperCase()}</div>` : '';
 
             let progressHtml = '';
             if (t.subtasks && t.subtasks.length > 0) {
                 const total = t.subtasks.length; const doneCount = t.subtasks.filter(s => s.done).length;
                 const pct = Math.round((doneCount / total) * 100);
-                progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:2px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
+                progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:4px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
             }
 
             card.innerHTML = `
@@ -440,7 +443,7 @@ function openModal(taskId = null, initialStatus = null) {
         document.getElementById('modalTaskInput').value = task.text;
         document.getElementById('modalDescriptionInput').value = task.description || '';
         document.getElementById('modalTagInput').value = task.tag?.name || task.tag || '';
-        updateColorPicker(); // Atualiza a cor de acordo com a tag da tarefa
+        updateColorPicker();
 
         document.getElementById('modalPriorityInput').value = task.priority;
         document.getElementById('modalAssigneeInput').value = task.assignee || '';
@@ -459,7 +462,6 @@ function openModal(taskId = null, initialStatus = null) {
         tempSubtasks = []; tempComments = []; tempHistory = [];
         document.getElementById('modalDateStart').value = getTodayString();
 
-        // Garante que a cor puxe da tag que estiver selecionada por default
         if (tags.length > 0) {
             document.getElementById('modalTagInput').selectedIndex = 0;
             updateColorPicker();
@@ -511,7 +513,6 @@ async function deleteTaskFromModal() {
     if (ok) { tasks = tasks.filter(t => t.id !== editingTaskId); save(); closeModal(); }
 }
 
-// LOGICA DE CORES DA TAG
 function updateTagsDropdown() {
     const m = document.getElementById('modalTagInput');
     const f = document.getElementById('filterTag');
@@ -542,7 +543,6 @@ function updateCurrentTagColor() {
 
     if (tagIndex > -1) {
         tags[tagIndex].color = newColor;
-        // Varre e atualiza a tag de todas as tarefas existentes em memoria
         tasks.forEach(t => {
             if (t.tag && t.tag.name === selectedTagName) {
                 t.tag.color = newColor;
@@ -551,7 +551,7 @@ function updateCurrentTagColor() {
             }
         });
         syncToFirebase();
-        render(); // Vai atualizar a cor visualmente nos cards atras do modal
+        render();
     }
 }
 
@@ -590,10 +590,10 @@ function addHistoryLog(action) {
 
 function renderHistory() {
     const container = document.getElementById('historyList');
-    if (tempHistory.length === 0) { container.innerHTML = '<div style="color:var(--text-sub); font-size:0.8rem; text-align:center;">Nenhum histórico.</div>'; return; }
+    if (tempHistory.length === 0) { container.innerHTML = '<div style="color:var(--text-sub); font-size:0.9rem; text-align:center; padding: 20px;">Nenhum registro de histórico.</div>'; return; }
     container.innerHTML = tempHistory.map(h => {
         const d = new Date(h.date);
-        return `<div class="history-item"><b>${h.user}</b> ${h.action} <span style="font-size:0.7rem; opacity:0.6; margin-left:5px;">(${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span></div>`;
+        return `<div class="history-item"><b>${h.user.split('@')[0]}</b> ${h.action} <span style="font-size:0.75rem; opacity:0.6; margin-left:5px;">(${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span></div>`;
     }).join('');
 }
 
@@ -608,10 +608,10 @@ function addComment() {
 
 function renderCommentsList() {
     const container = document.getElementById('commentsList');
-    if (tempComments.length === 0) { container.innerHTML = '<div style="color:var(--text-sub); font-size:0.8rem; text-align:center;">Nenhum comentário.</div>'; return; }
+    if (tempComments.length === 0) { container.innerHTML = '<div style="color:var(--text-sub); font-size:0.9rem; text-align:center; padding: 20px;">Nenhum comentário ainda.</div>'; return; }
     container.innerHTML = tempComments.map(c => {
         let text = c.text.replace(/(@\S+)/g, '<span class="mention">$1</span>');
-        return `<div class="comment-item"><div class="comment-header"><span>${c.author}</span><span>${c.date}</span></div><div class="comment-text">${text}</div></div>`;
+        return `<div class="comment-item"><div class="comment-header"><span>${c.author.split('@')[0]}</span><span>${c.date}</span></div><div class="comment-text">${text}</div></div>`;
     }).join('');
     container.scrollTop = container.scrollHeight;
 }
@@ -643,7 +643,7 @@ function switchDescTab(mode) {
     if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
     else { document.getElementById('btnWrite').classList.remove('active'); document.getElementById('btnPreview').classList.add('active'); document.getElementById('modalDescriptionInput').style.display = 'none'; document.getElementById('descPreview').style.display = 'block'; document.getElementById('descPreview').innerHTML = simpleMarkdown(document.getElementById('modalDescriptionInput').value); }
 }
-function simpleMarkdown(text) { if (!text) return '<em>Vazio</em>'; let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>'); return html.split('\n').join('<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>'); }
+function simpleMarkdown(text) { if (!text) return '<em style="color:var(--text-sub);">Nenhuma descrição detalhada inserida.</em>'; let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>'); return html.split('\n').join('<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>'); }
 
 // --- CALENDÁRIO ---
 function toggleView() {
@@ -683,7 +683,90 @@ async function removeCollaborator(e) {
 }
 function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border);"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.charAt(0).toUpperCase()}</div>${m}</div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer;">Remover</button>` : ''}</div>`).join(''); }
 
-// --- FUNÇÕES CORE RESTANTES ---
+// --- DASHBOARDS / RELATORIOS MELHORADOS ---
+function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
+function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
+document.getElementById('statsOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('statsOverlay')) closeStatsModal(); });
+
+function renderCharts() {
+    const today = getTodayString();
+    const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
+    const stats = { total: tasks.length, done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
+    const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0);
+
+    // Preparar dados de Desempenho por Responsável
+    const assigneeData = {};
+    currentBoardMembers.forEach(m => assigneeData[m] = { total: 0, done: 0 });
+    assigneeData['Sem Responsável'] = { total: 0, done: 0 };
+
+    tasks.forEach(t => {
+        // Lógica de Prioridade e Tags
+        const tName = t.tag?.name || t.tag;
+        if (tagCounts[tName] !== undefined) tagCounts[tName]++;
+        if (stats.priority[t.priority] !== undefined) stats.priority[t.priority]++;
+
+        // Lógica de Responsáveis
+        const assign = t.assignee || 'Sem Responsável';
+        if (!assigneeData[assign]) assigneeData[assign] = { total: 0, done: 0 };
+        assigneeData[assign].total++;
+        if (t.status === (doneCol?.id || 'done')) assigneeData[assign].done++;
+    });
+
+    document.getElementById('kpi-total').innerText = stats.total;
+    document.getElementById('kpi-done').innerText = stats.done;
+    document.getElementById('kpi-late').innerText = stats.late;
+    document.getElementById('kpi-avg').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%';
+
+    const textColor = theme === 'dark' ? '#e6edf3' : '#18181b';
+    const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4'];
+
+    // Gráfico de Tags
+    if (tagsChartInstance) tagsChartInstance.destroy();
+    tagsChartInstance = new Chart(document.getElementById('tagsChart'), {
+        type: 'doughnut',
+        data: { labels: Object.keys(tagCounts), datasets: [{ data: Object.values(tagCounts), backgroundColor: tags.map(t => t.color), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: textColor, font: { size: 11 } } } } }
+    });
+
+    // Gráfico de Colunas
+    if (statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(document.getElementById('statusChart'), {
+        type: 'bar',
+        data: { labels: columns.map(c => c.title), datasets: [{ label: 'Tarefas', data: columns.map(c => tasks.filter(t => t.status === c.id).length), backgroundColor: '#3b82f6', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, plugins: { legend: { display: false } } }
+    });
+
+    // Gráfico de Prioridade
+    if (priorityChartInstance) priorityChartInstance.destroy();
+    priorityChartInstance = new Chart(document.getElementById('priorityChart'), {
+        type: 'polarArea',
+        data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(99, 102, 241, 0.7)'] }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(128,128,128,0.2)' }, ticks: { display: false } } }, plugins: { legend: { position: 'right', labels: { color: textColor, font: { size: 11 } } } } }
+    });
+
+    // NOVO: Gráfico de Responsáveis
+    const assignLabels = Object.keys(assigneeData);
+    const assignTotal = assignLabels.map(l => assigneeData[l].total);
+    const assignDone = assignLabels.map(l => assigneeData[l].done);
+
+    if (assigneeChartInstance) assigneeChartInstance.destroy();
+    assigneeChartInstance = new Chart(document.getElementById('assigneeChart'), {
+        type: 'bar',
+        data: {
+            labels: assignLabels.map(l => l.split('@')[0]),
+            datasets: [
+                { label: 'Total Assumido', data: assignTotal, backgroundColor: '#6366f1', borderRadius: 4 },
+                { label: 'Entregue (Concluído)', data: assignDone, backgroundColor: '#10b981', borderRadius: 4 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } },
+            plugins: { legend: { position: 'top', labels: { color: textColor } } }
+        }
+    });
+}
+
 function saveTitle() { boardTitle = document.getElementById('boardTitle').innerText; const boardIndex = boards.findIndex(b => b.id === currentBoardId); if (boardIndex > -1) { boards[boardIndex].title = boardTitle; } renderBoardsList(); syncToFirebase(); }
 function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
 function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
@@ -709,10 +792,5 @@ function requestNotificationPermission() { if (Notification.permission !== "gran
 function triggerNotification(t, b) { document.getElementById('alertSound').play().catch(e => console.log(e)); if (Notification.permission === "granted") new Notification(t, { body: b, icon: 'assets/icon.png' }); }
 function startTimer() { requestNotificationPermission(); if (isTimerRunning) return; isTimerRunning = true; timerInterval = setInterval(() => { timerSeconds--; document.getElementById('pomodoroTimer').innerText = `${Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:${(timerSeconds % 60).toString().padStart(2, '0')}`; if (timerSeconds <= 0) { clearInterval(timerInterval); isTimerRunning = false; triggerNotification("Pomodoro!", "Tempo esgotado."); showSysAlert("Pomodoro: Tempo esgotado!"); timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; } }, 1000); }
 function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
-
-function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
-function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
-document.getElementById('statsOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('statsOverlay')) closeStatsModal(); });
-function renderCharts() { const today = getTodayString(); const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu')); const stats = { total: tasks.length, done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length, priority: { Alta: 0, Média: 0, Baixa: 0 } }; const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0); tasks.forEach(t => { const tName = t.tag?.name || t.tag; if (tagCounts[tName] !== undefined) tagCounts[tName]++; if (stats.priority[t.priority] !== undefined) stats.priority[t.priority]++; }); document.getElementById('kpi-total').innerText = stats.total; document.getElementById('kpi-done').innerText = stats.done; document.getElementById('kpi-late').innerText = stats.late; document.getElementById('kpi-avg').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%'; const textColor = theme === 'dark' ? '#e6edf3' : '#18181b'; const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444']; if (tagsChartInstance) tagsChartInstance.destroy(); tagsChartInstance = new Chart(document.getElementById('tagsChart'), { type: 'doughnut', data: { labels: Object.keys(tagCounts), datasets: [{ data: Object.values(tagCounts), backgroundColor: chartColors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } } } }); if (statusChartInstance) statusChartInstance.destroy(); statusChartInstance = new Chart(document.getElementById('statusChart'), { type: 'bar', data: { labels: columns.map(c => c.title), datasets: [{ label: 'Tarefas', data: columns.map(c => tasks.filter(t => t.status === c.id).length), backgroundColor: '#3b82f6', borderRadius: 5 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, plugins: { legend: { display: false } } } }); if (priorityChartInstance) priorityChartInstance.destroy(); priorityChartInstance = new Chart(document.getElementById('priorityChart'), { type: 'polarArea', data: { labels: ['Alta', 'Média', 'Baixa'], datasets: [{ data: [stats.priority.Alta, stats.priority.Média, stats.priority.Baixa], backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(99, 102, 241, 0.7)'] }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(128,128,128,0.2)' }, ticks: { display: false } } }, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } } } } }); }
 
 document.addEventListener('DOMContentLoaded', () => { document.body.setAttribute('data-theme', theme); applyBackground(currentBg); });
