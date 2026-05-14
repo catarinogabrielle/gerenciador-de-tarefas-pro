@@ -75,10 +75,10 @@ const defaultTags = [
 let tags = [...defaultTags];
 
 let currentTagFilter = 'all';
-let currentPriorityFilter = 'all';
 let filterMyTasksOnly = false;
 let searchTerm = '';
 let editingTaskId = null;
+let currentTargetColumn = null;
 let tempSubtasks = [];
 let tempComments = [];
 let tempHistory = [];
@@ -326,6 +326,23 @@ async function deleteCurrentBoard() {
 }
 
 // ==========================================
+// FILTROS DE BUSCA CORRIGIDOS
+// ==========================================
+function applyFilters() {
+    currentTagFilter = document.getElementById('filterTag').value;
+    searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    render();
+}
+
+function toggleMyTasks() {
+    filterMyTasksOnly = !filterMyTasksOnly;
+    const btn = document.getElementById('btnMyTasks');
+    btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent';
+    btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)';
+    render();
+}
+
+// ==========================================
 // INTERFACE PRINCIPAL E RENDER DO CARD
 // ==========================================
 function render() {
@@ -339,11 +356,11 @@ function render() {
     const filteredTasks = tasks.filter(t => {
         const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
         const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
-        const matchPriority = currentPriorityFilter === 'all' || t.priority === currentPriorityFilter;
         const matchMyTasks = filterMyTasksOnly ? t.assignee === currentUser.email : true;
         const term = searchTerm ? searchTerm.toLowerCase() : '';
         const titleMatch = t.text.toLowerCase().includes(term);
-        return matchTag && matchPriority && matchMyTasks && (term === '' || titleMatch);
+        // O filtro de prioridade foi removido do header, entao checamos apenas tag, tarefas e busca
+        return matchTag && matchMyTasks && (term === '' || titleMatch);
     });
 
     columns.forEach(col => {
@@ -356,7 +373,7 @@ function render() {
             <div class="column-header">
                 <div style="display:flex; align-items:center;">
                     <span contenteditable="true" class="column-title-edit" onblur="updateColumnTitle('${col.id}', this.innerText)">${col.title}</span>
-                    <button class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;">+</button>
+                    <button class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;" title="Adicionar nesta coluna">+</button>
                 </div>
                 <div style="display:flex; align-items:center;"><span id="count-${col.id}" class="count-badge">${count}</span>${deleteBtn}</div>
             </div>
@@ -370,14 +387,12 @@ function render() {
             const card = document.createElement('div');
             card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
 
-            // O card abre a tarefa (se o clique não for na imagem)
             card.onclick = (e) => {
                 if (!e.target.classList.contains('card-cover')) {
                     openModal(t.id);
                 }
             };
 
-            // ATUALIZADO: Card Cover abre o visualizador direto do Kanban!
             let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
 
             let dateHtml = '';
@@ -461,10 +476,10 @@ function setupColumnDragAndDrop() {
 }
 
 // ==========================================
-// FUNÇÕES DO VISUALIZADOR DE IMAGENS (NOVO)
+// FUNÇÕES DO VISUALIZADOR DE IMAGENS 
 // ==========================================
 function openImageViewer(e, src) {
-    e.stopPropagation(); // Previne abrir a edição da tarefa / arquivo
+    e.stopPropagation();
     document.getElementById('fullSizeImage').src = src;
     document.getElementById('imageViewerOverlay').classList.add('active');
 }
@@ -473,7 +488,7 @@ function closeImageViewer() {
     document.getElementById('imageViewerOverlay').classList.remove('active');
     setTimeout(() => {
         document.getElementById('fullSizeImage').src = '';
-    }, 200); // Limpa imagem apos sumir
+    }, 200);
 }
 
 // ==========================================
@@ -486,6 +501,8 @@ function openModal(taskId = null, initialStatus = null) {
     document.getElementById('subtaskInput').value = ''; document.getElementById('subtaskList').innerHTML = '';
     document.getElementById('commentInput').value = '';
     removeCover({ stopPropagation: () => { } });
+
+    currentTargetColumn = initialStatus;
 
     const assgnSelect = document.getElementById('modalAssigneeInput');
     assgnSelect.innerHTML = `<option value="">Sem responsável</option>` + currentBoardMembers.map(m => `<option value="${m}">${m}</option>`).join('');
@@ -530,7 +547,7 @@ function openModal(taskId = null, initialStatus = null) {
     modal.classList.add('active');
 }
 
-function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); editingTaskId = null; }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); editingTaskId = null; currentTargetColumn = null; }
 
 async function saveTaskBtnClick() {
     const text = document.getElementById('modalTaskInput').value.trim();
@@ -556,7 +573,7 @@ async function saveTaskBtnClick() {
         }
     } else {
         newTaskData.id = 'id-' + Date.now();
-        newTaskData.status = columns.length > 0 ? columns[0].id : 'todo';
+        newTaskData.status = currentTargetColumn || (columns.length > 0 ? columns[0].id : 'todo');
         newTaskData.history = [{ date: new Date().toISOString(), user: currentUser.email, action: 'Criou a tarefa' }];
         tasks.push(newTaskData);
     }
@@ -692,9 +709,6 @@ function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
 function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
 function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
 function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6; flex:1;' : 'flex:1;'}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
-
-function applyFilters() { currentTagFilter = document.getElementById('filterTag').value; currentPriorityFilter = document.getElementById('filterPriority').value; searchTerm = document.getElementById('searchInput').value.toLowerCase(); render(); }
-function toggleMyTasks() { filterMyTasksOnly = !filterMyTasksOnly; const btn = document.getElementById('btnMyTasks'); btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent'; btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)'; render(); }
 
 function switchDescTab(mode) {
     if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
