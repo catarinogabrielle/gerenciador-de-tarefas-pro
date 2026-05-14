@@ -65,9 +65,11 @@
                     <div class="cover-upload-area" id="coverUploadArea"
                         onclick="document.getElementById('fileCoverInput').click()">
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
-                        <img id="coverPreview" class="cover-preview" style="display: none;">
+                        <!-- ATUALIZADO: Adicionado onclick para abrir o visualizador -->
+                        <img id="coverPreview" class="cover-preview" style="display: none;"
+                            onclick="openImageViewer(event, this.src)" title="Clique para ampliar">
                         <button id="removeCoverBtn" class="btn-remove-cover" onclick="removeCover(event)"
-                            style="display: none;">×</button>
+                            style="display: none;" title="Remover imagem">×</button>
                     </div>
                     <input type="file" id="fileCoverInput" accept="image/*" style="display: none;"
                         onchange="handleFileSelect(this)">
@@ -180,6 +182,7 @@
         </div>
     </div>
 
+    <!-- Modal Templates -->
     <div class="modal-overlay" id="templateOverlay">
         <div class="modal-box" style="max-width: 400px; padding: 20px;">
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
@@ -197,6 +200,7 @@
         </div>
     </div>
 
+    <!-- Modal Relatórios -->
     <div class="modal-overlay" id="statsOverlay">
         <div class="modal-box" style="max-width: 1000px; width: 95%;">
             <div
@@ -206,7 +210,6 @@
                     style="padding: 6px 12px; height: auto;">Fechar</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px 30px;">
-                <!-- CARDS DE KPI COM CLASSES DE CORES -->
                 <div class="kpi-grid">
                     <div class="kpi-card kpi-primary"><span class="kpi-label">Total de Tarefas</span><span
                             class="kpi-value" id="kpi-total">0</span></div>
@@ -240,6 +243,7 @@
         </div>
     </div>
 
+    <!-- Modal de Compartilhamento -->
     <div class="modal-overlay" id="shareOverlay">
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
@@ -382,6 +386,12 @@
                 <button id="sysBtnConfirm" class="btn-primary">OK</button>
             </div>
         </div>
+    </div>
+
+    <!-- NOVO: VISUALIZADOR DE IMAGENS EM TELA CHEIA -->
+    <div class="image-viewer-overlay" id="imageViewerOverlay" onclick="closeImageViewer()">
+        <span class="close-viewer" title="Fechar">×</span>
+        <img id="fullSizeImage" class="full-size-image" src="" alt="Imagem Expandida" onclick="event.stopPropagation()">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-app.js"></script>

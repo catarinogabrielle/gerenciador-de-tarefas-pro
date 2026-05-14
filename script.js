@@ -368,9 +368,17 @@ function render() {
         filteredTasks.filter(t => t.status === col.id).forEach(t => {
             const isDoneCol = col.id === 'done' || col.title.toLowerCase().includes('conclu');
             const card = document.createElement('div');
-            card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id; card.onclick = () => openModal(t.id);
+            card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
 
-            let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover">` : '';
+            // O card abre a tarefa (se o clique não for na imagem)
+            card.onclick = (e) => {
+                if (!e.target.classList.contains('card-cover')) {
+                    openModal(t.id);
+                }
+            };
+
+            // ATUALIZADO: Card Cover abre o visualizador direto do Kanban!
+            let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
 
             let dateHtml = '';
             if (t.startDate || t.endDate) {
@@ -385,7 +393,6 @@ function render() {
 
             let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
 
-            // Renderização do avatar (pílula com nome)
             let avatarName = t.assignee ? t.assignee.split('@')[0] : '';
             let avatarHtml = t.assignee ? `<div class="avatar" title="${t.assignee}">${avatarName}</div>` : '';
 
@@ -451,6 +458,22 @@ function setupColumnDragAndDrop() {
             columns = n; saveColumns();
         }
     });
+}
+
+// ==========================================
+// FUNÇÕES DO VISUALIZADOR DE IMAGENS (NOVO)
+// ==========================================
+function openImageViewer(e, src) {
+    e.stopPropagation(); // Previne abrir a edição da tarefa / arquivo
+    document.getElementById('fullSizeImage').src = src;
+    document.getElementById('imageViewerOverlay').classList.add('active');
+}
+
+function closeImageViewer() {
+    document.getElementById('imageViewerOverlay').classList.remove('active');
+    setTimeout(() => {
+        document.getElementById('fullSizeImage').src = '';
+    }, 200); // Limpa imagem apos sumir
 }
 
 // ==========================================
@@ -715,7 +738,6 @@ async function removeCollaborator(e) {
     if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode remover.");
     if (e !== currentUser.email && await showSysConfirm(`Remover ${e}?`)) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); }
 }
-// Renderização atualizada para mostrar o nome (início do email) no Modal de Membros também
 function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0]}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
 // --- DASHBOARDS / RELATORIOS MELHORADOS ---
