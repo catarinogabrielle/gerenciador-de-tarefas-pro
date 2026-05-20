@@ -94,6 +94,11 @@ let statusChartInstance = null;
 let priorityChartInstance = null;
 let assigneeChartInstance = null;
 
+// Sincronização inteligente anti-jitter
+let syncTimeout = null;
+let isSavingLocally = false;
+let isDragging = false; // Bloqueador de re-render enquanto arrasta
+
 // ==========================================
 // MODAIS DO SISTEMA 
 // ==========================================
@@ -143,7 +148,7 @@ async function showSysConfirm(message, title = 'Confirmação') { return await s
 async function showSysPrompt(title, placeholder = '') { return await showSysModal(title, '', 'prompt', placeholder); }
 
 // ==========================================
-// NÚCLEO EM TEMPO REAL (FIREBASE)
+// SINCRO EM TEMPO REAL COM TRAVAS DE SEGURANÇA
 // ==========================================
 async function loadFromFirebase() {
     if (!currentUser) return;
@@ -202,9 +207,12 @@ async function loadFromFirebase() {
                     const activeData = newAllBoardsData[currentBoardId];
                     let needsRender = false;
 
-                    if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) { tasks = activeData.tasks; needsRender = true; }
-                    if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) { columns = activeData.columns; needsRender = true; }
-                    if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) { tags = activeData.tags; updateTagsDropdown(); needsRender = true; }
+                    // Bloqueia atualizações remotas se o usuário estiver digitando ou arrastando card
+                    if (!isSavingLocally && !isDragging) {
+                        if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) { tasks = activeData.tasks; needsRender = true; }
+                        if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) { columns = activeData.columns; needsRender = true; }
+                        if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) { tags = activeData.tags; updateTagsDropdown(); needsRender = true; }
+                    }
 
                     const boardObj = boards.find(b => b.id === currentBoardId);
                     if (boardObj && boardObj.title !== boardTitle) {
@@ -261,15 +269,30 @@ function syncToFirebase() {
     allBoardsData[currentBoardId].tags = tags;
     allBoardsData[currentBoardId].members = currentBoardMembers;
 
-    db.collection('boards').doc(currentBoardId).set({
-        title: boardTitle,
-        tasks_string: JSON.stringify(tasks),
-        columns_string: JSON.stringify(columns),
-        tags: tags,
-        members: currentBoardMembers,
-        owner: allBoardsData[currentBoardId].owner || currentUser.email,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(err => console.error("Erro Firebase:", err));
+    if (syncTimeout) clearTimeout(syncTimeout);
+
+    isSavingLocally = true;
+
+    syncTimeout = setTimeout(() => {
+        db.collection('boards').doc(currentBoardId).set({
+            title: boardTitle,
+            tasks_string: JSON.stringify(tasks),
+            columns_string: JSON.stringify(columns),
+            tags: tags,
+            members: currentBoardMembers,
+            owner: allBoardsData[currentBoardId].owner || currentUser.email,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true })
+            .then(() => {
+                isSavingLocally = false;
+                syncTimeout = null;
+            })
+            .catch(err => {
+                console.error("Erro Firebase:", err);
+                isSavingLocally = false;
+                syncTimeout = null;
+            });
+    }, 500);
 }
 
 // ==========================================
@@ -326,7 +349,7 @@ async function deleteCurrentBoard() {
 }
 
 // ==========================================
-// FILTROS DE BUSCA CORRIGIDOS
+// FILTROS DE BUSCA
 // ==========================================
 function applyFilters() {
     currentTagFilter = document.getElementById('filterTag').value;
@@ -359,7 +382,6 @@ function render() {
         const matchMyTasks = filterMyTasksOnly ? t.assignee === currentUser.email : true;
         const term = searchTerm ? searchTerm.toLowerCase() : '';
         const titleMatch = t.text.toLowerCase().includes(term);
-        // O filtro de prioridade foi removido do header, entao checamos apenas tag, tarefas e busca
         return matchTag && matchMyTasks && (term === '' || titleMatch);
     });
 
@@ -439,7 +461,11 @@ function setupCardDragAndDrop() {
     document.querySelectorAll('.tasks-container').forEach(container => {
         new Sortable(container, {
             group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
+            onStart: function () {
+                isDragging = true; // Trava contra atualizações de realtime durante o arraste
+            },
             onEnd: function (evt) {
+                isDragging = false;
                 const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status');
                 const task = tasks.find(t => t.id === itemEl.id);
                 if (task) {
@@ -458,7 +484,13 @@ function setupCardDragAndDrop() {
                 let newTasks = []; let map = new Map(tasks.map(t => [t.id, t]));
                 newOrderIds.forEach(id => { if (map.has(id)) { newTasks.push(map.get(id)); map.delete(id); } });
                 tasks = [...newTasks, ...Array.from(map.values())];
-                save();
+
+                syncToFirebase();
+
+                // Pequeno delay para garantir que a animação acabou antes do DOM reconstruir
+                setTimeout(() => {
+                    render();
+                }, 40);
             }
         });
     });
@@ -467,10 +499,14 @@ function setupCardDragAndDrop() {
 function setupColumnDragAndDrop() {
     new Sortable(document.getElementById('boardMain'), {
         handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
+        onStart: function () { isDragging = true; },
         onEnd: function () {
+            isDragging = false;
             let n = [];
             document.querySelectorAll('.column').forEach(e => { let c = columns.find(x => x.id === e.id); if (c) n.push(c); });
-            columns = n; saveColumns();
+            columns = n;
+            syncToFirebase();
+            setTimeout(() => { render(); }, 40);
         }
     });
 }
@@ -691,7 +727,7 @@ function renderCommentsList() {
 }
 
 // ==========================================
-// FUNÇÕES DE APOIO
+// FUNÇÕES DE GESTÃO AUXILIAR
 // ==========================================
 function save() { render(); syncToFirebase(); }
 function saveColumns() { render(); syncToFirebase(); }
@@ -754,7 +790,7 @@ async function removeCollaborator(e) {
 }
 function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0]}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
-// --- DASHBOARDS / RELATORIOS MELHORADOS ---
+// --- RENDERS DE RELATÓRIO ---
 function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
 function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
 document.getElementById('statsOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('statsOverlay')) closeStatsModal(); });
