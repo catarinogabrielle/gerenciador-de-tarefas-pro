@@ -65,11 +65,9 @@
                     <div class="cover-upload-area" id="coverUploadArea"
                         onclick="document.getElementById('fileCoverInput').click()">
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
-                        <!-- ATUALIZADO: Adicionado onclick para abrir o visualizador -->
-                        <img id="coverPreview" class="cover-preview" style="display: none;"
-                            onclick="openImageViewer(event, this.src)" title="Clique para ampliar">
+                        <img id="coverPreview" class="cover-preview" style="display: none;">
                         <button id="removeCoverBtn" class="btn-remove-cover" onclick="removeCover(event)"
-                            style="display: none;" title="Remover imagem">×</button>
+                            style="display: none;">×</button>
                     </div>
                     <input type="file" id="fileCoverInput" accept="image/*" style="display: none;"
                         onchange="handleFileSelect(this)">
@@ -119,11 +117,15 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>Responsável</label>
-                        <select id="modalAssigneeInput" class="input-main">
-                            <option value="">Sem responsável</option>
-                        </select>
+                    <div class="form-group" style="grid-column: 1 / -1; margin-top: 5px;">
+                        <label>Responsáveis (Clique na tag para remover)</label>
+                        <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
+                            <select id="modalAssigneeSelect" class="input-main" style="width: 250px; flex-shrink: 0;"
+                                onchange="addAssigneeFromSelect()">
+                                <option value="">+ Adicionar responsável...</option>
+                            </select>
+                            <div id="modalAssigneeContainer" class="multi-assignee-container"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -182,7 +184,6 @@
         </div>
     </div>
 
-    <!-- Modal Templates -->
     <div class="modal-overlay" id="templateOverlay">
         <div class="modal-box" style="max-width: 400px; padding: 20px;">
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
@@ -200,9 +201,8 @@
         </div>
     </div>
 
-    <!-- Modal Relatórios -->
     <div class="modal-overlay" id="statsOverlay">
-        <div class="modal-box" style="max-width: 1000px;">
+        <div class="modal-box" style="max-width: 1000px; width: 90%;">
             <div
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid var(--border);">
                 <h3 style="margin:0;">📊 Dashboards de Performance</h3>
@@ -243,7 +243,6 @@
         </div>
     </div>
 
-    <!-- Modal de Compartilhamento -->
     <div class="modal-overlay" id="shareOverlay">
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
@@ -388,7 +387,6 @@
         </div>
     </div>
 
-    <!-- NOVO: VISUALIZADOR DE IMAGENS EM TELA CHEIA -->
     <div class="image-viewer-overlay" id="imageViewerOverlay" onclick="closeImageViewer()">
         <span class="close-viewer" title="Fechar">×</span>
         <img id="fullSizeImage" class="full-size-image" src="" alt="Imagem Expandida" onclick="event.stopPropagation()">
