@@ -65,9 +65,10 @@
                     <div class="cover-upload-area" id="coverUploadArea"
                         onclick="document.getElementById('fileCoverInput').click()">
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
-                        <img id="coverPreview" class="cover-preview" style="display: none;">
+                        <img id="coverPreview" class="cover-preview" style="display: none;"
+                            onclick="openImageViewer(event, this.src)" title="Clique para ampliar">
                         <button id="removeCoverBtn" class="btn-remove-cover" onclick="removeCover(event)"
-                            style="display: none;">×</button>
+                            style="display: none;" title="Remover imagem">×</button>
                     </div>
                     <input type="file" id="fileCoverInput" accept="image/*" style="display: none;"
                         onchange="handleFileSelect(this)">
@@ -118,7 +119,7 @@
                     </div>
 
                     <div class="form-group" style="grid-column: 1 / -1; margin-top: 5px;">
-                        <label>Responsáveis (Clique na tag para remover)</label>
+                        <label>Responsáveis (Clique no chip para remover)</label>
                         <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
                             <select id="modalAssigneeSelect" class="input-main" style="width: 250px; flex-shrink: 0;"
                                 onchange="addAssigneeFromSelect()">
@@ -202,7 +203,7 @@
     </div>
 
     <div class="modal-overlay" id="statsOverlay">
-        <div class="modal-box" style="max-width: 1000px; width: 90%;">
+        <div class="modal-box" style="max-width: 1000px; width: 95%;">
             <div
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid var(--border);">
                 <h3 style="margin:0;">📊 Dashboards de Performance</h3>
@@ -371,8 +372,13 @@
         <div class="prog-track">
             <div class="prog-fill" id="prog-fill"></div>
         </div>
-        <span id="prog-val" style="font-weight: 700;">0%</span>
+        <span id="prog-val">0%</span>
     </footer>
+
+    <div class="image-viewer-overlay" id="imageViewerOverlay" onclick="closeImageViewer()">
+        <span class="close-viewer" title="Fechar">×</span>
+        <img id="fullSizeImage" class="full-size-image" src="" alt="Imagem Expandida" onclick="event.stopPropagation()">
+    </div>
 
     <div class="sys-overlay" id="sysOverlay">
         <div class="sys-box">
@@ -385,11 +391,6 @@
                 <button id="sysBtnConfirm" class="btn-primary">OK</button>
             </div>
         </div>
-    </div>
-
-    <div class="image-viewer-overlay" id="imageViewerOverlay" onclick="closeImageViewer()">
-        <span class="close-viewer" title="Fechar">×</span>
-        <img id="fullSizeImage" class="full-size-image" src="" alt="Imagem Expandida" onclick="event.stopPropagation()">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/firebase@8.10.1/firebase-app.js"></script>

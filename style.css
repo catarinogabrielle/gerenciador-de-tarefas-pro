@@ -480,7 +480,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: none;
 }
 
-/* === NOVO LAYOUT DO SELECT MÚLTIPLO === */
+/* COMPONENTE DE SELEÇÃO MULTIPLA CHIPS */
 .multi-assignee-container {
   display: flex;
   flex-wrap: wrap;
@@ -648,6 +648,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transform: scale(1.1);
 }
 
+/* VISUALIZADOR LIGHTBOX */
 .image-viewer-overlay {
   position: fixed;
   inset: 0;
@@ -1066,6 +1067,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
+/* AVATARES SOBREPOSTOS NO CARD (Estilo Jira/Trello) */
 .avatar-group {
   display: flex;
   align-items: center;
@@ -1176,23 +1178,27 @@ footer {
   gap: 20px;
   color: var(--text-sub);
   flex-shrink: 0;
+  z-index: 100;
+  position: relative;
 }
 
 .prog-track {
-  height: 6px;
+  height: 8px;
   background: var(--bg-column);
   flex: 1;
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .prog-fill {
   height: 100%;
   background: var(--done-border);
   width: 0%;
-  transition: 0.6s;
+  transition: width 0.6s cubic-bezier(0.1, 1, 0.1, 1);
 }
 
+/* RELATÓRIOS E KPIS */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
