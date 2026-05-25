@@ -12,13 +12,12 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Variáveis Globais de Estado e Sessão
 let currentUser = null;
 let dbListenerUnsubscribe = null;
 let isDragging = false;
 let syncTimeout = null;
 let isSavingLocally = false;
-let boardSortableInstance = null; // Previne múltiplas instâncias de arraste na board
+let boardSortableInstance = null;
 
 auth.onAuthStateChanged(user => {
     const loginScreen = document.getElementById('loginOverlay');
@@ -33,9 +32,6 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// ==========================================
-// AUTENTICAÇÃO
-// ==========================================
 async function loginFirebase() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPassword').value;
@@ -70,9 +66,6 @@ function logoutFirebase() {
     auth.signOut().then(() => window.location.reload());
 }
 
-// ==========================================
-// VARIÁVEIS DO QUADRO
-// ==========================================
 let theme = localStorage.getItem('nexus_theme') || 'light';
 let currentBg = localStorage.getItem('nexus_bg') || 'default';
 let allBoardsData = {};
@@ -105,7 +98,6 @@ let isCalendarView = false;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
-// Instâncias de Gráficos
 let tagsChartInstance = null;
 let statusChartInstance = null;
 let priorityChartInstance = null;
@@ -113,9 +105,6 @@ let assigneeChartInstance = null;
 
 let modalSelectedAssignees = [];
 
-// ==========================================
-// COMPONENTES DE AVISOS E MODAIS (UX)
-// ==========================================
 function showSysModal(title, message, type = 'alert', placeholder = '') {
     return new Promise((resolve) => {
         const overlay = document.getElementById('sysOverlay');
@@ -165,9 +154,6 @@ async function showSysAlert(message) { return await showSysModal('Aviso', messag
 async function showSysConfirm(message, title = 'Confirmação') { return await showSysModal(title, message, 'confirm'); }
 async function showSysPrompt(title, placeholder = '') { return await showSysModal(title, '', 'prompt', placeholder); }
 
-// ==========================================
-// TEMPO REAL (FIREBASE) COM PREVENÇÃO DE CONFLITOS
-// ==========================================
 async function loadFromFirebase() {
     if (!currentUser) return;
     try {
@@ -225,7 +211,6 @@ async function loadFromFirebase() {
                     const activeData = newAllBoardsData[currentBoardId];
                     let needsRender = false;
 
-                    // Proteção de Concorrência: Não re-renderiza se o usuário estiver movendo ou salvando um card
                     if (!isSavingLocally && !isDragging) {
                         if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) { tasks = activeData.tasks; needsRender = true; }
                         if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) { columns = activeData.columns; needsRender = true; }
@@ -268,7 +253,6 @@ function loadBoardData(boardId) {
     tasks = bData.tasks || [];
     columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
 
-    // Suporte ao sistema legado: Converte assignee de string para array
     tasks.forEach(t => {
         if (!t.assignees) {
             t.assignees = t.assignee ? [t.assignee] : [];
@@ -289,7 +273,6 @@ function loadBoardData(boardId) {
     render();
 }
 
-// SALVAMENTO EM LOTE INTELIGENTE (Debounce para evitar [code=resource-exhausted])
 function syncToFirebase() {
     if (!currentUser || !currentBoardId) return;
 
@@ -304,7 +287,6 @@ function syncToFirebase() {
 
     isSavingLocally = true;
 
-    // Aguarda 600ms antes de fazer o push pro servidor
     syncTimeout = setTimeout(() => {
         db.collection('boards').doc(currentBoardId).set({
             title: boardTitle,
@@ -327,9 +309,6 @@ function syncToFirebase() {
     }, 600);
 }
 
-// ==========================================
-// AÇÕES DO QUADRO
-// ==========================================
 function openTemplateModal() { document.getElementById('templateOverlay').classList.add('active'); }
 function closeTemplateModal() { document.getElementById('templateOverlay').classList.remove('active'); }
 
@@ -388,9 +367,6 @@ function saveTitle() {
     syncToFirebase();
 }
 
-// ==========================================
-// FILTROS
-// ==========================================
 function applyFilters() {
     currentTagFilter = document.getElementById('filterTag').value;
     searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -405,9 +381,6 @@ function toggleMyTasks() {
     render();
 }
 
-// ==========================================
-// RENDERIZAÇÃO DO TABULEIRO (KANBAN)
-// ==========================================
 function render() {
     if (isCalendarView) { renderCalendar(); return; }
     document.getElementById('boardMain').style.display = 'flex';
@@ -511,15 +484,12 @@ function render() {
     setupColumnDragAndDrop();
 }
 
-// ==========================================
-// CONTROLE DE ARRASTAR E SOLTAR (SORTABLE.JS)
-// ==========================================
 function setupCardDragAndDrop() {
     document.querySelectorAll('.tasks-container').forEach(container => {
         new Sortable(container, {
             group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
             onStart: function () {
-                isDragging = true; // Trava contra atualizações de realtime durante o arraste
+                isDragging = true;
             },
             onEnd: function (evt) {
                 isDragging = false;
@@ -543,7 +513,6 @@ function setupCardDragAndDrop() {
                     }
                 }
 
-                // Reordena o array principal de tasks baseado no que foi visto na tela
                 const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
                 let newTasks = [];
                 let map = new Map(tasks.map(t => [t.id, t]));
@@ -556,13 +525,8 @@ function setupCardDragAndDrop() {
                 });
 
                 tasks = [...newTasks, ...Array.from(map.values())];
-
                 syncToFirebase();
-
-                // ATRASO DE SEGURANÇA: Permite o drag & drop do mouse terminar antes de recriar a DOM
-                setTimeout(() => {
-                    render();
-                }, 50);
+                setTimeout(() => { render(); }, 50);
             }
         });
     });
@@ -602,9 +566,6 @@ function saveColumns() {
     syncToFirebase();
 }
 
-// ==========================================
-// CONTROLE DO MODAL DE TAREFAS
-// ==========================================
 function openModal(taskId = null, initialStatus = null) {
     const modal = document.getElementById('modalOverlay');
     document.getElementById('modalTaskInput').value = '';
@@ -725,7 +686,6 @@ async function deleteTaskFromModal() {
     }
 }
 
-// --- CONTROLE DE MÚLTIPLOS RESPONSÁVEIS (CHIPS) ---
 function renderAssigneeSelect() {
     const select = document.getElementById('modalAssigneeSelect');
     const availableMembers = currentBoardMembers.filter(m => !modalSelectedAssignees.includes(m));
@@ -756,7 +716,6 @@ function removeAssigneeFromModal(email) {
     renderAssigneeChips();
 }
 
-// --- FUNÇÕES DE TAG E CORES ---
 function updateTagsDropdown() {
     const m = document.getElementById('modalTagInput');
     const f = document.getElementById('filterTag');
@@ -806,7 +765,6 @@ async function addNewTag() {
     }
 }
 
-// --- TABS DE COMENTÁRIO E HISTÓRICO ---
 function switchBottomTab(tab) {
     document.getElementById('btnTabComments').classList.remove('active');
     document.getElementById('btnTabHistory').classList.remove('active');
@@ -854,7 +812,6 @@ function renderCommentsList() {
     container.scrollTop = container.scrollHeight;
 }
 
-// --- SUBTAREFAS (CHECKLIST) E DESCRIÇÃO ---
 function addSubtask() { let i = document.getElementById('subtaskInput'); if (i.value.trim()) { tempSubtasks.push({ text: i.value.trim(), done: false }); i.value = ''; renderSubtasksList(); } }
 function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
 function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
@@ -867,11 +824,9 @@ function switchDescTab(mode) {
 }
 function simpleMarkdown(text) { if (!text) return '<em style="color:var(--text-sub);">Nenhuma descrição detalhada inserida.</em>'; let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>'); return html.split('\n').join('<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>'); }
 
-// --- VISUALIZADOR DE CAPAS ---
 function openImageViewer(e, src) { e.stopPropagation(); document.getElementById('fullSizeImage').src = src; document.getElementById('imageViewerOverlay').classList.add('active'); }
 function closeImageViewer() { document.getElementById('imageViewerOverlay').classList.remove('active'); setTimeout(() => { document.getElementById('fullSizeImage').src = ''; }, 200); }
 
-// --- AÇÕES DO BOARD E COLUNAS ---
 async function deleteColumn(id) {
     if (tasks.filter(t => t.status === id).length > 0) return showSysAlert("Esta coluna contém tarefas. Mova-as antes de excluir.");
     const ok = await showSysConfirm("Excluir coluna vazia?");
@@ -880,7 +835,6 @@ async function deleteColumn(id) {
 function updateColumnTitle(id, t) { let c = columns.find(x => x.id === id); if (c) { c.title = t; saveColumns(); } }
 async function addColumn() { const t = await showSysPrompt("Nome da coluna:"); if (t) { columns.push({ id: 'col-' + Date.now(), title: t }); saveColumns(); } }
 
-// --- CALENDÁRIO ---
 function toggleView() {
     isCalendarView = !isCalendarView;
     document.getElementById('btnViewToggle').style.background = isCalendarView ? 'var(--accent)' : 'transparent';
@@ -888,23 +842,59 @@ function toggleView() {
     document.getElementById('btnAddColBtn').style.display = isCalendarView ? 'none' : 'block';
     render();
 }
+
 function renderCalendar() {
-    document.getElementById('boardMain').style.display = 'none'; document.getElementById('calendarMain').style.display = 'flex';
-    const head = document.getElementById('calendarHeader'); const grid = document.getElementById('calendarGrid');
+    document.getElementById('boardMain').style.display = 'none';
+    document.getElementById('calendarMain').style.display = 'flex';
+    const head = document.getElementById('calendarHeader');
+    const grid = document.getElementById('calendarGrid');
+
     const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2><div style="display:flex; gap:10px;"><button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button><button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button><button class="btn-secondary" onclick="changeMonth(1)">➡️</button></div>`;
+
+    head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2>
+                      <div style="display:flex; gap:10px;">
+                          <button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button>
+                          <button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button>
+                          <button class="btn-secondary" onclick="changeMonth(1)">➡️</button>
+                      </div>`;
     grid.innerHTML = '';
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="calendar-day empty"></div>`;
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+
+    for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+    }
+
+    const todayDate = new Date();
+    const isCurrentMonth = todayDate.getMonth() === currentMonth && todayDate.getFullYear() === currentYear;
+
     for (let d = 1; d <= daysInMonth; d++) {
         let dayStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-        let html = tasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => `<div class="cal-task-pill" onclick="openModal('${t.id}')">${t.startDate === dayStr ? '🟢' : '🔴'} ${t.text}</div>`).join('');
-        grid.innerHTML += `<div class="calendar-day"><div class="calendar-day-header">${d}</div>${html}</div>`;
+
+        let html = tasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => {
+            const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || t.tag;
+            const taskColor = tagObj?.color || 'var(--accent)';
+            const isStart = t.startDate === dayStr;
+            const icon = isStart ? '▶' : '🏁';
+
+            return `<div class="cal-task-pill" onclick="openModal('${t.id}')" style="--pill-color: ${taskColor};" title="${t.text}">
+                        <span style="font-size: 10px; margin-right: 6px; opacity: 0.8;">${icon}</span>
+                        ${t.text}
+                    </div>`;
+        }).join('');
+
+        const isToday = isCurrentMonth && todayDate.getDate() === d;
+        const headerHtml = isToday
+            ? `<div class="calendar-day-header today"><span>Hoje ${d}</span></div>`
+            : `<div class="calendar-day-header">${d}</div>`;
+
+        grid.innerHTML += `<div class="calendar-day">${headerHtml}${html}</div>`;
     }
 }
+
 function changeMonth(dir) { currentMonth += dir; if (currentMonth > 11) { currentMonth = 0; currentYear++; } else if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
 
-// --- COMPARTILHAMENTO ---
 function openShareModal() { document.getElementById('shareOverlay').classList.add('active'); renderMembersList(); }
 function closeShareModal() { document.getElementById('shareOverlay').classList.remove('active'); }
 function addCollaborator() {
@@ -918,7 +908,6 @@ async function removeCollaborator(e) {
 }
 function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0].charAt(0).toUpperCase()}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
-// --- DASHBOARDS / RELATORIOS MELHORADOS COM FIX PARA GRÁFICO POLAR ---
 function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
 function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
 document.getElementById('statsOverlay').addEventListener('click', (e) => { if (e.target === document.getElementById('statsOverlay')) closeStatsModal(); });
@@ -968,7 +957,6 @@ function renderCharts() {
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } }, plugins: { legend: { display: false } } }
     });
 
-    // CORREÇÃO: Fix no Gráfico Polar Area (Removendo os números brancos do fundo)
     if (priorityChartInstance) priorityChartInstance.destroy();
     priorityChartInstance = new Chart(document.getElementById('priorityChart'), {
         type: 'polarArea',
@@ -1006,7 +994,6 @@ function renderCharts() {
     });
 }
 
-// --- UTILIDADES FINA ---
 function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
 function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
 function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); applyBackground(currentBg); if (document.getElementById('statsOverlay').classList.contains('active')) renderCharts(); }
@@ -1014,7 +1001,6 @@ function toggleMenu() { document.getElementById('sidebar').classList.toggle('act
 function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 function formatDate(s) { if (s) { const d = new Date(s); return new Date(d.getTime() + d.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); } return ''; }
 
-// CORREÇÃO: BARRA DE PROGRESSO DO FOOTER
 function updateMetrics(tl) {
     columns.forEach(c => {
         let el = document.getElementById(`count-${c.id}`);
@@ -1030,7 +1016,6 @@ function updateMetrics(tl) {
     document.getElementById('prog-val').innerText = pct + '%';
 }
 
-// CORREÇÃO: CONFETES AO MOVER PARA CONCLUÍDO
 function fireConfetti() {
     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 }
