@@ -1426,49 +1426,56 @@ footer {
 
 /* Forçando o Tema do Gerenciador no Frappe Gantt */
 .gantt .grid-background {
-  fill: var(--bg-card);
+  fill: var(--bg-body) !important;
 }
 
 .gantt .grid-header {
-  fill: var(--bg-column);
-  stroke: var(--border);
+  fill: var(--bg-sidebar) !important;
+  stroke: var(--border) !important;
 }
 
 .gantt .grid-row {
-  fill: var(--bg-card);
+  fill: var(--bg-card) !important;
 }
 
 .gantt .grid-row:nth-child(even) {
-  fill: var(--bg-body);
+  fill: var(--bg-body) !important;
 }
 
 .gantt .tick {
-  stroke: var(--border);
+  stroke: var(--border) !important;
 }
 
+/* Textos (Meses e Dias) */
 .gantt .upper-text,
 .gantt .lower-text {
   fill: var(--text-main) !important;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
 }
 
+/* Barras das Tarefas */
 .gantt .bar {
-  fill: var(--accent);
-  stroke: transparent;
-  cursor: pointer;
+  fill: var(--accent) !important;
+  stroke: transparent !important;
 }
 
 .gantt .bar-progress {
-  fill: rgba(255, 255, 255, 0.25);
+  fill: rgba(0, 0, 0, 0.25) !important;
 }
 
+/* Sombra no progresso para não clarear a cor principal */
 .gantt .bar-label {
-  fill: #fff;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  text-anchor: start;
+  fill: #ffffff !important;
+  font-weight: 800 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+}
+
+/* Corrige a faixa amarela padrão que marca o dia de "Hoje" */
+.gantt .today-highlight {
+  fill: var(--accent) !important;
+  opacity: 0.1 !important;
 }
 
 /* Tooltip do Gantt (Hover) */
