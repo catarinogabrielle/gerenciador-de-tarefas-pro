@@ -94,7 +94,10 @@ let currentTargetColumn = null;
 let tempSubtasks = [];
 let tempComments = [];
 let tempHistory = [];
-let isCalendarView = false;
+
+// VARIÁVEIS DE CONTROLE DE VIEW
+let currentMainView = 'board'; // 'board', 'calendar', 'gantt', 'whiteboard'
+
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
@@ -382,9 +385,12 @@ function toggleMyTasks() {
 }
 
 function render() {
-    if (isCalendarView) { renderCalendar(); return; }
+    if (currentMainView !== 'board') return;
+
     document.getElementById('boardMain').style.display = 'flex';
     document.getElementById('calendarMain').style.display = 'none';
+    document.getElementById('ganttMain').style.display = 'none';
+    document.getElementById('whiteboardMain').style.display = 'none';
 
     const board = document.getElementById('boardMain');
     board.innerHTML = '';
@@ -835,17 +841,45 @@ async function deleteColumn(id) {
 function updateColumnTitle(id, t) { let c = columns.find(x => x.id === id); if (c) { c.title = t; saveColumns(); } }
 async function addColumn() { const t = await showSysPrompt("Nome da coluna:"); if (t) { columns.push({ id: 'col-' + Date.now(), title: t }); saveColumns(); } }
 
-function toggleView() {
-    isCalendarView = !isCalendarView;
-    document.getElementById('btnViewToggle').style.background = isCalendarView ? 'var(--accent)' : 'transparent';
-    document.getElementById('btnViewToggle').style.color = isCalendarView ? 'white' : 'var(--text-sub)';
-    document.getElementById('btnAddColBtn').style.display = isCalendarView ? 'none' : 'block';
-    render();
+function switchMainView(viewId) {
+    currentMainView = viewId;
+
+    // Esconde todos
+    document.getElementById('boardMain').style.display = 'none';
+    document.getElementById('calendarMain').style.display = 'none';
+    document.getElementById('ganttMain').style.display = 'none';
+    document.getElementById('whiteboardMain').style.display = 'none';
+
+    // Remove classe ativa dos botões
+    document.getElementById('btnViewBoard').classList.remove('active-view');
+    document.getElementById('btnViewCal').classList.remove('active-view');
+    document.getElementById('btnViewGantt').classList.remove('active-view');
+    document.getElementById('btnViewWhiteboard').classList.remove('active-view');
+
+    // Mostra o selecionado
+    if (viewId === 'board') {
+        document.getElementById('boardMain').style.display = 'flex';
+        document.getElementById('btnViewBoard').classList.add('active-view');
+        document.getElementById('btnAddColBtn').style.display = 'block';
+        render();
+    } else if (viewId === 'calendar') {
+        document.getElementById('calendarMain').style.display = 'flex';
+        document.getElementById('btnViewCal').classList.add('active-view');
+        document.getElementById('btnAddColBtn').style.display = 'none';
+        renderCalendar();
+    } else if (viewId === 'gantt') {
+        document.getElementById('ganttMain').style.display = 'flex';
+        document.getElementById('btnViewGantt').classList.add('active-view');
+        document.getElementById('btnAddColBtn').style.display = 'none';
+        renderGantt();
+    } else if (viewId === 'whiteboard') {
+        document.getElementById('whiteboardMain').style.display = 'block';
+        document.getElementById('btnViewWhiteboard').classList.add('active-view');
+        document.getElementById('btnAddColBtn').style.display = 'none';
+    }
 }
 
 function renderCalendar() {
-    document.getElementById('boardMain').style.display = 'none';
-    document.getElementById('calendarMain').style.display = 'flex';
     const head = document.getElementById('calendarHeader');
     const grid = document.getElementById('calendarGrid');
 
@@ -1034,11 +1068,211 @@ function importData(inputElement) { const file = inputElement.files[0]; if (!fil
 
 function requestNotificationPermission() { if (Notification.permission !== "granted") Notification.requestPermission(); }
 function triggerNotification(t, b) { document.getElementById('alertSound').play().catch(e => console.log(e)); if (Notification.permission === "granted") new Notification(t, { body: b, icon: 'assets/icon.png' }); }
+
+let timerInterval;
+let timerSeconds = 1500;
+let isTimerRunning = false;
+
 function startTimer() { requestNotificationPermission(); if (isTimerRunning) return; isTimerRunning = true; timerInterval = setInterval(() => { timerSeconds--; document.getElementById('pomodoroTimer').innerText = `${Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:${(timerSeconds % 60).toString().padStart(2, '0')}`; if (timerSeconds <= 0) { clearInterval(timerInterval); isTimerRunning = false; triggerNotification("Pomodoro!", "Tempo esgotado."); showSysAlert("Pomodoro: Tempo esgotado!"); timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; } }, 1000); }
 function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
+
+// ============================================
+// GANTT E WHITEBOARD
+// ============================================
+let ganttChart = null;
+
+function renderGantt() {
+    const wrapper = document.querySelector('.gantt-container-wrapper');
+
+    let ganttTasks = tasks.filter(t => t.startDate).map(t => {
+        let startStr = t.startDate;
+        let endStr = t.endDate;
+
+        // CORREÇÃO: Garante que as datas fiquem no fuso correto (T00:00:00)
+        let startD = new Date(startStr + 'T00:00:00');
+        let endD = endStr ? new Date(endStr + 'T00:00:00') : new Date(startD);
+
+        // Frappe Gantt Bug Fix: Se Start e End forem no mesmo dia, a barra some (width 0).
+        // Forçamos o EndDate a ser pelo menos 1 dia depois APENAS na visualização do gráfico.
+        if (endD.getTime() <= startD.getTime()) {
+            endD.setDate(startD.getDate() + 1);
+        }
+
+        let safeEndStr = endD.toISOString().split('T')[0];
+
+        // Calculando % de sub-tarefas
+        let progress = 0;
+        if (t.status === 'done' || (columns.find(c => c.id === t.status)?.title || '').toLowerCase().includes('conclu')) {
+            progress = 100;
+        } else if (t.subtasks && t.subtasks.length > 0) {
+            let p = Math.round((t.subtasks.filter(s => s.done).length / t.subtasks.length) * 100);
+            progress = isNaN(p) ? 0 : p;
+        }
+
+        return {
+            id: t.id,
+            name: t.text || 'Tarefa sem título',
+            start: startStr,
+            end: safeEndStr,
+            progress: progress,
+        };
+    });
+
+    if (ganttTasks.length === 0) {
+        wrapper.innerHTML = '<div style="color: var(--text-sub); text-align: center; margin-top: 50px; font-weight: 600;">⚠️ Nenhuma tarefa com "Data de Início" definida.<br><br>Defina as datas nos cards para gerar o gráfico.</div>';
+        ganttChart = null;
+        return;
+    }
+
+    // Limpa o SVG anterior para o Frappe Gantt não bugar
+    wrapper.innerHTML = '<svg id="gantt"></svg>';
+
+    try {
+        ganttChart = new Gantt("#gantt", ganttTasks, {
+            header_height: 50,
+            column_width: 30,
+            step: 24,
+            view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
+            bar_height: 28,
+            bar_corner_radius: 8,
+            arrow_curve: 5,
+            padding: 18,
+            view_mode: 'Day',
+            date_format: 'YYYY-MM-DD',
+            language: 'en', // Usar 'en' garante estabilidade na engine interna do Frappe Gantt
+            on_date_change: function (task, start, end) {
+                const tIndex = tasks.findIndex(t => t.id === task.id);
+                if (tIndex > -1) {
+                    const formatDt = (dt) => {
+                        const tzOffset = dt.getTimezoneOffset() * 60000;
+                        return new Date(dt.getTime() - tzOffset).toISOString().split('T')[0];
+                    };
+
+                    tasks[tIndex].startDate = formatDt(start);
+                    // Retorna a data original correta para o sistema
+                    tasks[tIndex].endDate = formatDt(end);
+
+                    if (!tasks[tIndex].history) tasks[tIndex].history = [];
+                    tasks[tIndex].history.unshift({
+                        date: new Date().toISOString(),
+                        user: currentUser ? currentUser.email : 'Usuário',
+                        action: 'Alterou prazos pelo Cronograma'
+                    });
+                    syncToFirebase();
+                }
+            },
+            on_click: function (task) {
+                openModal(task.id);
+            }
+        });
+    } catch (error) {
+        console.error("Erro interno do Gantt:", error);
+        wrapper.innerHTML = `<div style="color: #ef4444; text-align: center; margin-top: 50px;">Ocorreu um erro ao montar o gráfico. Erro: ${error.message}</div>`;
+    }
+}
+
+function changeGanttZoom(mode) {
+    if (ganttChart) {
+        ganttChart.change_view_mode(mode);
+        const buttons = document.querySelectorAll('.gantt-controls button');
+        buttons.forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+}
+
+let stickyCount = 0;
+let draggedSticky = null;
+let offset = [0, 0];
+
+function addStickyNote() {
+    const canvas = document.getElementById('whiteboardCanvas');
+    const sticky = document.createElement('div');
+    sticky.className = 'sticky-note';
+    sticky.id = 'sticky-' + (++stickyCount);
+    sticky.draggable = true;
+
+    const wbContainer = document.getElementById('whiteboardMain');
+    let sl = wbContainer.scrollLeft;
+    let st = wbContainer.scrollTop;
+
+    sticky.style.left = (sl + Math.random() * 200 + 50) + 'px';
+    sticky.style.top = (st + Math.random() * 100 + 50) + 'px';
+
+    const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
+    sticky.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+    sticky.innerHTML = `
+        <div class="sticky-header">
+            <button class="sticky-delete" onclick="this.parentElement.parentElement.remove()">✖</button>
+        </div>
+        <textarea class="sticky-content" placeholder="Digite sua ideia..."></textarea>
+    `;
+
+    sticky.addEventListener('dragstart', (e) => {
+        draggedSticky = sticky;
+        const rect = sticky.getBoundingClientRect();
+        offset = [
+            e.clientX - rect.left,
+            e.clientY - rect.top
+        ];
+        e.dataTransfer.effectAllowed = "move";
+        e.stopPropagation();
+    });
+
+    canvas.appendChild(sticky);
+}
+
+function allowDrop(e) { e.preventDefault(); }
+
+function dropSticky(e) {
+    e.preventDefault();
+    if (draggedSticky) {
+        const canvasRect = document.getElementById('whiteboardCanvas').getBoundingClientRect();
+
+        let x = e.clientX - canvasRect.left - offset[0];
+        let y = e.clientY - canvasRect.top - offset[1];
+
+        draggedSticky.style.left = x + 'px';
+        draggedSticky.style.top = y + 'px';
+        draggedSticky = null;
+    }
+}
+
+function clearWhiteboard() {
+    showSysConfirm("Limpar todo o quadro branco?").then(ok => {
+        if (ok) {
+            document.getElementById('whiteboardCanvas').innerHTML = '';
+        }
+    });
+}
+
+const wbContainer = document.getElementById('whiteboardMain');
+let isPanning = false, startPanX, startPanY, scrollLeft, scrollTop;
+
+wbContainer.addEventListener('mousedown', (e) => {
+    if (e.target.id === 'whiteboardCanvas' || e.target.id === 'whiteboardMain') {
+        isPanning = true;
+        startPanX = e.pageX - wbContainer.offsetLeft;
+        startPanY = e.pageY - wbContainer.offsetTop;
+        scrollLeft = wbContainer.scrollLeft;
+        scrollTop = wbContainer.scrollTop;
+    }
+});
+
+wbContainer.addEventListener('mouseleave', () => { isPanning = false; });
+wbContainer.addEventListener('mouseup', () => { isPanning = false; });
+wbContainer.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    const x = e.pageX - wbContainer.offsetLeft;
+    const y = e.pageY - wbContainer.offsetTop;
+    wbContainer.scrollLeft = scrollLeft - (x - startPanX);
+    wbContainer.scrollTop = scrollTop - (y - startPanY);
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     document.body.setAttribute('data-theme', theme);
     applyBackground(currentBg);
     window.addEventListener('paste', handlePaste);
+    switchMainView('board');
 });

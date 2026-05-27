@@ -7,6 +7,7 @@
     <title>Gerencia de Tarefas PRO</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.css">
     <meta name="theme-color" content="#010409">
     <link rel="apple-touch-icon" href="assets/icon.png">
     <link rel="icon" type="image/x-icon" href="assets/icon.ico">
@@ -347,9 +348,17 @@
                 demandas</span>
         </div>
         <div class="filter-wrapper">
-            <button class="btn-secondary header-btn" onclick="toggleView()" id="btnViewToggle"
-                title="Alternar visão Calendário">📅 Visão</button>
-            <button class="btn-secondary header-btn" onclick="addColumn()" id="btnAddColBtn">+ Coluna</button>
+            <button class="btn-secondary header-btn active-view" onclick="switchMainView('board')" id="btnViewBoard">📋
+                Quadro</button>
+            <button class="btn-secondary header-btn" onclick="switchMainView('calendar')" id="btnViewCal">📅
+                Calendário</button>
+            <button class="btn-secondary header-btn" onclick="switchMainView('gantt')" id="btnViewGantt">📊
+                Cronograma</button>
+            <button class="btn-secondary header-btn" onclick="switchMainView('whiteboard')" id="btnViewWhiteboard">🎨
+                Whiteboard</button>
+
+            <button class="btn-secondary header-btn" onclick="addColumn()" id="btnAddColBtn"
+                style="margin-left: 10px;">+ Coluna</button>
             <button class="btn-secondary header-btn" onclick="toggleMyTasks()" id="btnMyTasks">🙋‍♂️ Minhas
                 Tarefas</button>
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar..."
@@ -365,6 +374,35 @@
     <main class="calendar-view" id="calendarMain" style="display: none;">
         <div class="calendar-header" id="calendarHeader"></div>
         <div class="calendar-grid" id="calendarGrid"></div>
+    </main>
+
+    <main class="gantt-view" id="ganttMain" style="display: none;">
+        <div class="gantt-header">
+            <div>
+                <h2 style="margin-bottom: 5px; margin-top: 0;">Cronograma de Execução</h2>
+                <span style="font-size: 0.85rem; color: var(--text-sub);">Arraste as tarefas nas pontas para alterar os
+                    prazos. Clique na barra para abrir a tarefa.</span>
+            </div>
+            <div class="gantt-controls">
+                <button class="btn-secondary" onclick="changeGanttZoom('Quarter Day')">Horas</button>
+                <button class="btn-secondary" onclick="changeGanttZoom('Half Day')">Turnos</button>
+                <button class="btn-secondary active" onclick="changeGanttZoom('Day')">Dias</button>
+                <button class="btn-secondary" onclick="changeGanttZoom('Week')">Semanas</button>
+                <button class="btn-secondary" onclick="changeGanttZoom('Month')">Meses</button>
+            </div>
+        </div>
+        <div class="gantt-container-wrapper">
+            <svg id="gantt"></svg>
+        </div>
+    </main>
+
+    <main class="whiteboard-view" id="whiteboardMain" style="display: none;">
+        <div class="whiteboard-toolbar">
+            <button class="btn-primary" onclick="addStickyNote()">+ Adicionar Post-it</button>
+            <button class="btn-secondary" onclick="clearWhiteboard()">Limpar Quadro</button>
+        </div>
+        <div class="whiteboard-canvas" id="whiteboardCanvas" ondragover="allowDrop(event)" ondrop="dropSticky(event)">
+        </div>
     </main>
 
     <footer>
@@ -399,6 +437,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
+
     <script src="script.js"></script>
 </body>
 

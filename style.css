@@ -1384,3 +1384,196 @@ footer {
 .member-item:last-child {
   border-bottom: none;
 }
+
+/* --- Estilos do Cronograma (Frappe Gantt Interativo) --- */
+.gantt-view {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 2.5rem;
+  height: 100%;
+  overflow: hidden;
+}
+
+.gantt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.gantt-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.gantt-controls .active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.gantt-container-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Forçando o Tema do Gerenciador no Frappe Gantt */
+.gantt .grid-background {
+  fill: var(--bg-card);
+}
+
+.gantt .grid-header {
+  fill: var(--bg-column);
+  stroke: var(--border);
+}
+
+.gantt .grid-row {
+  fill: var(--bg-card);
+}
+
+.gantt .grid-row:nth-child(even) {
+  fill: var(--bg-body);
+}
+
+.gantt .tick {
+  stroke: var(--border);
+}
+
+.gantt .upper-text,
+.gantt .lower-text {
+  fill: var(--text-main) !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
+.gantt .bar {
+  fill: var(--accent);
+  stroke: transparent;
+  cursor: pointer;
+}
+
+.gantt .bar-progress {
+  fill: rgba(255, 255, 255, 0.25);
+}
+
+.gantt .bar-label {
+  fill: #fff;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  text-anchor: start;
+}
+
+/* Tooltip do Gantt (Hover) */
+.gantt .details-container {
+  background: var(--bg-sidebar) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  color: var(--text-main) !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.gantt .details-container .title {
+  color: var(--accent) !important;
+  font-weight: 800 !important;
+}
+
+/* --- Estilos do Whiteboard (Miro Clone) --- */
+.whiteboard-view {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 20px 20px;
+  /* Efeito de Grid */
+  background-color: var(--bg-body);
+}
+
+.whiteboard-toolbar {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  background: var(--bg-sidebar);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.whiteboard-canvas {
+  width: 5000px;
+  /* Canvas gigante simulando infinito */
+  height: 5000px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: grab;
+}
+
+.whiteboard-canvas:active {
+  cursor: grabbing;
+}
+
+.sticky-note {
+  width: 200px;
+  min-height: 200px;
+  background: #fef08a;
+  /* Amarelo clássico */
+  position: absolute;
+  padding: 15px;
+  box-shadow: var(--shadow-md);
+  cursor: move;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sticky-note[data-theme="dark"] {
+  color: #18181b;
+  /* O texto do post-it sempre será escuro para contraste */
+}
+
+.sticky-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 5px;
+}
+
+.sticky-delete {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.sticky-content {
+  flex: 1;
+  border: none;
+  background: transparent;
+  resize: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #18181b;
+}
+
+/* Botões de navegação */
+.active-view {
+  background: var(--accent) !important;
+  color: white !important;
+  border-color: var(--accent) !important;
+}
