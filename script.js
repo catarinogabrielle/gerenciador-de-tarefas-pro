@@ -74,6 +74,7 @@ let currentBoardId = null;
 let boardTitle = '';
 let columns = [];
 let tasks = [];
+let stickyNotes = []; // NOVO: Estado para os Post-its do Whiteboard
 let currentBoardMembers = [];
 
 const defaultTags = [
@@ -187,9 +188,12 @@ async function loadFromFirebase() {
                     });
 
                     newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
+
+                    // Extrai as tarefas, colunas e também o Whiteboard (se existir)
                     newAllBoardsData[doc.id] = {
                         tasks: data.tasks_string ? JSON.parse(data.tasks_string) : [],
                         columns: data.columns_string ? JSON.parse(data.columns_string) : [],
+                        whiteboard: data.whiteboard_string ? JSON.parse(data.whiteboard_string) : [],
                         members: data.members || [currentUser.email],
                         tags: parsedTags,
                         owner: data.owner
@@ -213,11 +217,18 @@ async function loadFromFirebase() {
                 } else {
                     const activeData = newAllBoardsData[currentBoardId];
                     let needsRender = false;
+                    let needsWhiteboardRender = false;
 
                     if (!isSavingLocally && !isDragging) {
                         if (JSON.stringify(activeData.tasks) !== JSON.stringify(tasks)) { tasks = activeData.tasks; needsRender = true; }
                         if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) { columns = activeData.columns; needsRender = true; }
                         if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) { tags = activeData.tags; updateTagsDropdown(); needsRender = true; }
+
+                        // Atualiza o Whiteboard se mudou no Firebase
+                        if (JSON.stringify(activeData.whiteboard) !== JSON.stringify(stickyNotes)) {
+                            stickyNotes = activeData.whiteboard;
+                            needsWhiteboardRender = true;
+                        }
                     }
 
                     const boardObj = boards.find(b => b.id === currentBoardId);
@@ -237,6 +248,7 @@ async function loadFromFirebase() {
 
                     allBoardsData = newAllBoardsData;
                     if (needsRender) render();
+                    if (needsWhiteboardRender) renderWhiteboard();
                 }
             }, error => {
                 console.error("Erro Live DB:", error);
@@ -255,6 +267,7 @@ function loadBoardData(boardId) {
 
     tasks = bData.tasks || [];
     columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
+    stickyNotes = bData.whiteboard || []; // Carrega o Whiteboard específico deste quadro
 
     tasks.forEach(t => {
         if (!t.assignees) {
@@ -274,6 +287,7 @@ function loadBoardData(boardId) {
     renderBoardsList();
     updateTagsDropdown();
     render();
+    renderWhiteboard(); // Desenha os post-its do quadro atual
 }
 
 function syncToFirebase() {
@@ -283,6 +297,7 @@ function syncToFirebase() {
     allBoardsData[currentBoardId].columns = columns;
     allBoardsData[currentBoardId].tags = tags;
     allBoardsData[currentBoardId].members = currentBoardMembers;
+    allBoardsData[currentBoardId].whiteboard = stickyNotes;
 
     if (syncTimeout) {
         clearTimeout(syncTimeout);
@@ -295,6 +310,7 @@ function syncToFirebase() {
             title: boardTitle,
             tasks_string: JSON.stringify(tasks),
             columns_string: JSON.stringify(columns),
+            whiteboard_string: JSON.stringify(stickyNotes), // Salva o Whiteboard
             tags: tags,
             members: currentBoardMembers,
             owner: allBoardsData[currentBoardId].owner || currentUser.email,
@@ -335,7 +351,8 @@ async function applyTemplate(type) {
     const newId = 'board-' + Date.now();
     const newBoardData = {
         title: title, owner: currentUser.email, members: [currentUser.email],
-        tasks_string: "[]", columns_string: JSON.stringify(initCols), tags: [...defaultTags]
+        tasks_string: "[]", columns_string: JSON.stringify(initCols),
+        whiteboard_string: "[]", tags: [...defaultTags]
     };
 
     currentBoardId = newId;
@@ -1063,8 +1080,52 @@ function compressImage(base64Str, maxWidth = 800, callback) { const img = new Im
 function setCoverImage(base64String) { document.getElementById('coverPreview').src = base64String; document.getElementById('coverPreview').style.display = 'block'; document.getElementById('coverPlaceholder').style.display = 'none'; document.getElementById('removeCoverBtn').style.display = 'block'; document.getElementById('modalCoverInput').value = base64String; }
 function removeCover(e) { e.stopPropagation(); document.getElementById('coverPreview').src = ''; document.getElementById('coverPreview').style.display = 'none'; document.getElementById('coverPlaceholder').style.display = 'block'; document.getElementById('removeCoverBtn').style.display = 'none'; document.getElementById('modalCoverInput').value = ''; document.getElementById('fileCoverInput').value = ''; }
 
-function exportData() { if (currentBoardId) { allBoardsData[currentBoardId] = { tasks, columns, tags, members: currentBoardMembers, owner: allBoardsData[currentBoardId].owner }; } const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({ boards, currentBoardId, tags, allBoardsData })], { type: "application/json" })); a.download = `gerenciador-pro-backup-${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
-function importData(inputElement) { const file = inputElement.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async function (e) { try { const d = JSON.parse(e.target.result); if (!d.allBoardsData) return showSysAlert("Backup inválido."); boards = d.boards || []; currentBoardId = d.currentBoardId; tags = d.tags || []; allBoardsData = {}; for (const [bId, bData] of Object.entries(d.allBoardsData)) { allBoardsData[bId] = { tasks: bData.tasks || JSON.parse(bData.tasks_string || "[]"), columns: bData.columns || JSON.parse(bData.columns_string || "[]"), members: bData.members || [currentUser.email], tags: bData.tags || tags, owner: bData.owner || currentUser.email }; } loadBoardData(currentBoardId); syncToFirebase(); inputElement.value = ''; showSysAlert("Backup restaurado!"); } catch (err) { showSysAlert("Falha ao ler."); } }; reader.readAsText(file); }
+function exportData() {
+    if (currentBoardId) {
+        allBoardsData[currentBoardId] = {
+            tasks, columns, tags,
+            whiteboard: stickyNotes,
+            members: currentBoardMembers,
+            owner: allBoardsData[currentBoardId].owner
+        };
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ boards, currentBoardId, tags, allBoardsData })], { type: "application/json" }));
+    a.download = `gerenciador-pro-backup-${new Date().getTime()}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function importData(inputElement) {
+    const file = inputElement.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+        try {
+            const d = JSON.parse(e.target.result);
+            if (!d.allBoardsData) return showSysAlert("Backup inválido.");
+            boards = d.boards || [];
+            currentBoardId = d.currentBoardId;
+            tags = d.tags || [];
+            allBoardsData = {};
+            for (const [bId, bData] of Object.entries(d.allBoardsData)) {
+                allBoardsData[bId] = {
+                    tasks: bData.tasks || JSON.parse(bData.tasks_string || "[]"),
+                    columns: bData.columns || JSON.parse(bData.columns_string || "[]"),
+                    whiteboard: bData.whiteboard || (bData.whiteboard_string ? JSON.parse(bData.whiteboard_string) : []),
+                    members: bData.members || [currentUser.email],
+                    tags: bData.tags || tags,
+                    owner: bData.owner || currentUser.email
+                };
+            }
+            loadBoardData(currentBoardId);
+            syncToFirebase();
+            inputElement.value = '';
+            showSysAlert("Backup restaurado!");
+        } catch (err) {
+            showSysAlert("Falha ao ler.");
+        }
+    };
+    reader.readAsText(file);
+}
 
 function requestNotificationPermission() { if (Notification.permission !== "granted") Notification.requestPermission(); }
 function triggerNotification(t, b) { document.getElementById('alertSound').play().catch(e => console.log(e)); if (Notification.permission === "granted") new Notification(t, { body: b, icon: 'assets/icon.png' }); }
@@ -1077,7 +1138,7 @@ function startTimer() { requestNotificationPermission(); if (isTimerRunning) ret
 function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
 
 // ============================================
-// GANTT E WHITEBOARD
+// GANTT
 // ============================================
 let ganttChart = null;
 
@@ -1088,19 +1149,15 @@ function renderGantt() {
         let startStr = t.startDate;
         let endStr = t.endDate;
 
-        // CORREÇÃO: Garante que as datas fiquem no fuso correto (T00:00:00)
         let startD = new Date(startStr + 'T00:00:00');
         let endD = endStr ? new Date(endStr + 'T00:00:00') : new Date(startD);
 
-        // Frappe Gantt Bug Fix: Se Start e End forem no mesmo dia, a barra some (width 0).
-        // Forçamos o EndDate a ser pelo menos 1 dia depois APENAS na visualização do gráfico.
         if (endD.getTime() <= startD.getTime()) {
             endD.setDate(startD.getDate() + 1);
         }
 
         let safeEndStr = endD.toISOString().split('T')[0];
 
-        // Calculando % de sub-tarefas
         let progress = 0;
         if (t.status === 'done' || (columns.find(c => c.id === t.status)?.title || '').toLowerCase().includes('conclu')) {
             progress = 100;
@@ -1124,7 +1181,6 @@ function renderGantt() {
         return;
     }
 
-    // Limpa o SVG anterior para o Frappe Gantt não bugar
     wrapper.innerHTML = '<svg id="gantt"></svg>';
 
     try {
@@ -1139,7 +1195,7 @@ function renderGantt() {
             padding: 18,
             view_mode: 'Day',
             date_format: 'YYYY-MM-DD',
-            language: 'en', // Usar 'en' garante estabilidade na engine interna do Frappe Gantt
+            language: 'en',
             on_date_change: function (task, start, end) {
                 const tIndex = tasks.findIndex(t => t.id === task.id);
                 if (tIndex > -1) {
@@ -1149,7 +1205,6 @@ function renderGantt() {
                     };
 
                     tasks[tIndex].startDate = formatDt(start);
-                    // Retorna a data original correta para o sistema
                     tasks[tIndex].endDate = formatDt(end);
 
                     if (!tasks[tIndex].history) tasks[tIndex].history = [];
@@ -1180,68 +1235,112 @@ function changeGanttZoom(mode) {
     }
 }
 
-let stickyCount = 0;
-let draggedSticky = null;
+
+// ============================================
+// WHITEBOARD (COM FIREBASE SYNC)
+// ============================================
+let draggedStickyId = null;
 let offset = [0, 0];
 
-function addStickyNote() {
+function renderWhiteboard() {
     const canvas = document.getElementById('whiteboardCanvas');
-    const sticky = document.createElement('div');
-    sticky.className = 'sticky-note';
-    sticky.id = 'sticky-' + (++stickyCount);
-    sticky.draggable = true;
+    canvas.innerHTML = '';
 
+    stickyNotes.forEach(note => {
+        const sticky = document.createElement('div');
+        sticky.className = 'sticky-note';
+        sticky.id = note.id;
+        sticky.draggable = true;
+        sticky.style.left = note.left;
+        sticky.style.top = note.top;
+        sticky.style.background = note.color;
+
+        sticky.innerHTML = `
+            <div class="sticky-header">
+                <button class="sticky-delete" onclick="deleteSticky('${note.id}')" title="Excluir">✖</button>
+            </div>
+            <textarea class="sticky-content" placeholder="Digite sua ideia..." onchange="updateStickyText('${note.id}', this.value)">${note.text || ''}</textarea>
+        `;
+
+        sticky.addEventListener('dragstart', (e) => {
+            draggedStickyId = note.id;
+            const rect = sticky.getBoundingClientRect();
+            offset = [e.clientX - rect.left, e.clientY - rect.top];
+            e.dataTransfer.effectAllowed = "move";
+            e.stopPropagation();
+        });
+
+        canvas.appendChild(sticky);
+    });
+}
+
+function addStickyNote() {
     const wbContainer = document.getElementById('whiteboardMain');
     let sl = wbContainer.scrollLeft;
     let st = wbContainer.scrollTop;
 
-    sticky.style.left = (sl + Math.random() * 200 + 50) + 'px';
-    sticky.style.top = (st + Math.random() * 100 + 50) + 'px';
-
     const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
-    sticky.style.background = colors[Math.floor(Math.random() * colors.length)];
 
-    sticky.innerHTML = `
-        <div class="sticky-header">
-            <button class="sticky-delete" onclick="this.parentElement.parentElement.remove()">✖</button>
-        </div>
-        <textarea class="sticky-content" placeholder="Digite sua ideia..."></textarea>
-    `;
+    const newNote = {
+        id: 'sticky-' + Date.now(),
+        text: '',
+        left: (sl + Math.random() * 200 + 50) + 'px',
+        top: (st + Math.random() * 100 + 50) + 'px',
+        color: colors[Math.floor(Math.random() * colors.length)]
+    };
 
-    sticky.addEventListener('dragstart', (e) => {
-        draggedSticky = sticky;
-        const rect = sticky.getBoundingClientRect();
-        offset = [
-            e.clientX - rect.left,
-            e.clientY - rect.top
-        ];
-        e.dataTransfer.effectAllowed = "move";
-        e.stopPropagation();
-    });
+    stickyNotes.push(newNote);
+    renderWhiteboard();
+    syncToFirebase();
+}
 
-    canvas.appendChild(sticky);
+function deleteSticky(id) {
+    stickyNotes = stickyNotes.filter(n => n.id !== id);
+    renderWhiteboard();
+    syncToFirebase();
+}
+
+function updateStickyText(id, text) {
+    const note = stickyNotes.find(n => n.id === id);
+    if (note) {
+        note.text = text;
+        syncToFirebase();
+    }
 }
 
 function allowDrop(e) { e.preventDefault(); }
 
 function dropSticky(e) {
     e.preventDefault();
-    if (draggedSticky) {
+    if (draggedStickyId) {
         const canvasRect = document.getElementById('whiteboardCanvas').getBoundingClientRect();
 
         let x = e.clientX - canvasRect.left - offset[0];
         let y = e.clientY - canvasRect.top - offset[1];
 
-        draggedSticky.style.left = x + 'px';
-        draggedSticky.style.top = y + 'px';
-        draggedSticky = null;
+        const noteIndex = stickyNotes.findIndex(n => n.id === draggedStickyId);
+        if (noteIndex > -1) {
+            stickyNotes[noteIndex].left = x + 'px';
+            stickyNotes[noteIndex].top = y + 'px';
+
+            // Atualiza direto no DOM para nao piscar o focus do input
+            const domEl = document.getElementById(draggedStickyId);
+            if (domEl) {
+                domEl.style.left = stickyNotes[noteIndex].left;
+                domEl.style.top = stickyNotes[noteIndex].top;
+            }
+            syncToFirebase();
+        }
+        draggedStickyId = null;
     }
 }
 
 function clearWhiteboard() {
     showSysConfirm("Limpar todo o quadro branco?").then(ok => {
         if (ok) {
-            document.getElementById('whiteboardCanvas').innerHTML = '';
+            stickyNotes = [];
+            renderWhiteboard();
+            syncToFirebase();
         }
     });
 }
