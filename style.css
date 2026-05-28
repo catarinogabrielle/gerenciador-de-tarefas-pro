@@ -73,7 +73,6 @@ body {
   inset: 0;
   background: var(--bg-body);
   z-index: 10000;
-  /* Fica por cima de TUDO, inclusive do login (9999) */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -835,7 +834,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
+  height: 42px !important;
 }
 
 .btn-secondary:hover {
@@ -856,7 +855,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
+  height: 42px !important;
 }
 
 .btn-primary:hover {
@@ -1160,7 +1159,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: fixed;
   justify-content: space-between;
   align-items: center;
-  width: 95% !important;
+  width: 90% !important;
   padding: 0px 10px 5px 10px;
   border-bottom: 1px solid var(--border);
 }
@@ -1502,7 +1501,6 @@ footer {
   fill: rgba(0, 0, 0, 0.25) !important;
 }
 
-/* Sombra no progresso para não clarear a cor principal */
 .gantt .bar-label {
   fill: #ffffff !important;
   font-weight: 800 !important;
@@ -1538,7 +1536,6 @@ footer {
   overflow: hidden;
   background: radial-gradient(circle, var(--border) 1px, transparent 1px);
   background-size: 20px 20px;
-  /* Efeito de Grid */
   background-color: var(--bg-body);
 }
 
@@ -1558,7 +1555,6 @@ footer {
 
 .whiteboard-canvas {
   width: 5000px;
-  /* Canvas gigante simulando infinito */
   height: 5000px;
   position: absolute;
   top: 0;
@@ -1574,7 +1570,6 @@ footer {
   width: 200px;
   min-height: 200px;
   background: #fef08a;
-  /* Amarelo clássico */
   position: absolute;
   padding: 15px;
   box-shadow: var(--shadow-md);
@@ -1587,7 +1582,6 @@ footer {
 
 .sticky-note[data-theme="dark"] {
   color: #18181b;
-  /* O texto do post-it sempre será escuro para contraste */
 }
 
 .sticky-header {
@@ -1616,9 +1610,201 @@ footer {
   color: #18181b;
 }
 
-/* Botões de navegação */
 .active-view {
   background: var(--accent) !important;
   color: white !important;
   border-color: var(--accent) !important;
+}
+
+/* ========================================================= */
+/* RESPONSIVIDADE (MOBILE FIXES)                             */
+/* ========================================================= */
+@media (max-width: 850px) {
+
+  /* Header & Navegação */
+  header {
+    padding: 15px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .filter-wrapper {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-wrapper::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .header-btn,
+  .search-input,
+  .filter-select {
+    flex-shrink: 0;
+  }
+
+  .sidebar {
+    left: -330px;
+  }
+
+  .editable-title {
+    max-width: 60vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Board (Kanban) */
+  .board {
+    padding: 15px;
+    gap: 15px;
+  }
+
+  .column {
+    min-width: 85vw;
+    width: 85vw;
+  }
+
+  /* Modals Genéricos */
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-box {
+    max-height: 92vh;
+    border-radius: 12px;
+    margin: 0;
+  }
+
+  .modal-header-fixed {
+    padding: 15px 20px;
+  }
+
+  .modal-content-scroll {
+    padding: 10px 20px 20px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    padding: 15px 20px;
+    gap: 10px;
+  }
+
+  .btn-delete-modal {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .modal-actions {
+    width: 100%;
+    margin-left: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .modal-actions button {
+    padding: 0 10px;
+  }
+
+  /* Formulários */
+  .form-grid {
+    grid-template-columns: 1fr;
+    /* Colunas empilhadas */
+    gap: 12px;
+  }
+
+  .form-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  #modalAssigneeSelect {
+    width: 100% !important;
+  }
+
+  /* Gantt */
+  .gantt-view {
+    padding: 15px;
+  }
+
+  .gantt-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .gantt-controls {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 5px;
+  }
+
+  .gantt-controls button {
+    flex-shrink: 0;
+  }
+
+  /* Calendário */
+  .calendar-view {
+    padding: 15px;
+  }
+
+  .calendar-grid {
+    gap: 4px;
+  }
+
+  .calendar-day {
+    min-height: 80px;
+    padding: 4px;
+  }
+
+  .calendar-day-header {
+    font-size: 0.75rem;
+  }
+
+  .cal-task-pill {
+    font-size: 0.65rem;
+    padding: 4px;
+  }
+
+  /* Whiteboard */
+  .whiteboard-toolbar {
+    left: 5px;
+    flex-wrap: wrap;
+    width: calc(100% - 30px);
+  }
+
+  .whiteboard-toolbar button {
+    flex: 1;
+  }
+
+  /* Relatórios / Dashboard */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #statsOverlay .modal-box {
+    width: 100%;
+    height: 95vh;
+    max-height: 95vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
 }
