@@ -67,6 +67,44 @@ body {
   transition: background 0.3s;
 }
 
+/* --- Loading Global --- */
+.global-loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-body);
+  z-index: 10000;
+  /* Fica por cima de TUDO, inclusive do login (9999) */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.4s ease;
+}
+
+.global-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 45px;
+  height: 45px;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 header {
   background: var(--bg-sidebar);
   padding: 1rem 2.5rem;

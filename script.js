@@ -21,14 +21,23 @@ let boardSortableInstance = null;
 
 auth.onAuthStateChanged(user => {
     const loginScreen = document.getElementById('loginOverlay');
+    const globalLoader = document.getElementById('globalLoader');
+
     if (user) {
         currentUser = user;
         loginScreen.style.display = 'none';
+        // Não removemos o loader aqui! Vamos deixar ele girando até o Firebase trazer as tarefas.
         loadFromFirebase();
     } else {
         currentUser = null;
         loginScreen.style.display = 'flex';
         if (dbListenerUnsubscribe) dbListenerUnsubscribe();
+
+        // Se não tiver usuário logado, remove o loader para ele ver a tela de login
+        if (globalLoader) {
+            globalLoader.classList.add('hidden');
+            setTimeout(() => globalLoader.style.display = 'none', 400);
+        }
     }
 });
 
@@ -189,7 +198,6 @@ async function loadFromFirebase() {
 
                     newBoards.push({ id: doc.id, title: data.title, owner: data.owner });
 
-                    // Extrai as tarefas, colunas e também o Whiteboard (se existir)
                     newAllBoardsData[doc.id] = {
                         tasks: data.tasks_string ? JSON.parse(data.tasks_string) : [],
                         columns: data.columns_string ? JSON.parse(data.columns_string) : [],
@@ -202,9 +210,18 @@ async function loadFromFirebase() {
 
                 boards = newBoards;
 
+                // VARIÁVEL DO LOADER
+                const globalLoader = document.getElementById('globalLoader');
+
                 if (boards.length === 0) {
                     if (!document.getElementById('sysOverlay').classList.contains('active') && !document.getElementById('templateOverlay').classList.contains('active')) {
                         openTemplateModal();
+                    }
+
+                    // Se for conta nova (zero quadros), oculta o loader
+                    if (globalLoader && !globalLoader.classList.contains('hidden')) {
+                        globalLoader.classList.add('hidden');
+                        setTimeout(() => globalLoader.style.display = 'none', 400);
                     }
                     return;
                 }
@@ -224,7 +241,6 @@ async function loadFromFirebase() {
                         if (JSON.stringify(activeData.columns) !== JSON.stringify(columns)) { columns = activeData.columns; needsRender = true; }
                         if (JSON.stringify(activeData.tags) !== JSON.stringify(tags)) { tags = activeData.tags; updateTagsDropdown(); needsRender = true; }
 
-                        // Atualiza o Whiteboard se mudou no Firebase
                         if (JSON.stringify(activeData.whiteboard) !== JSON.stringify(stickyNotes)) {
                             stickyNotes = activeData.whiteboard;
                             needsWhiteboardRender = true;
@@ -250,6 +266,13 @@ async function loadFromFirebase() {
                     if (needsRender) render();
                     if (needsWhiteboardRender) renderWhiteboard();
                 }
+
+                // Quando terminar todo o ciclo de renderização, oculta o loader!
+                if (globalLoader && !globalLoader.classList.contains('hidden')) {
+                    globalLoader.classList.add('hidden');
+                    setTimeout(() => globalLoader.style.display = 'none', 400);
+                }
+
             }, error => {
                 console.error("Erro Live DB:", error);
                 showSysAlert("Conexão perdida. Recarregue a página.");
