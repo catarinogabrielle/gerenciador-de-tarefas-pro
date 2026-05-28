@@ -834,6 +834,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 42px !important;
 }
 
 .btn-secondary:hover {
@@ -1318,6 +1319,12 @@ footer {
   line-height: 1;
 }
 
+@media (max-width: 800px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1325,6 +1332,12 @@ footer {
   margin-top: 10px;
   width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 800px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chart-container {
@@ -1521,9 +1534,8 @@ footer {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle, var(--border) 1px, transparent 1px);
-  background-size: 20px 20px;
   background-color: var(--bg-body);
+  /* Grid removed from here */
 }
 
 .whiteboard-toolbar {
@@ -1541,12 +1553,18 @@ footer {
 }
 
 .whiteboard-canvas {
-  width: 5000px;
-  height: 5000px;
+  width: 10000px;
+  /* Canvas gigante simulando infinito */
+  height: 10000px;
   position: absolute;
   top: 0;
   left: 0;
   cursor: grab;
+  /* NOVA REGRA: Suaviza a animação do Zoom e joga a grid pra cá */
+  background: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 20px 20px;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 .whiteboard-canvas:active {
@@ -1575,6 +1593,26 @@ footer {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 5px;
+}
+
+/* NOVA REGRA: Bolinhas de Cores */
+.sticky-colors {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.color-dot:hover {
+  transform: scale(1.3);
 }
 
 .sticky-delete {

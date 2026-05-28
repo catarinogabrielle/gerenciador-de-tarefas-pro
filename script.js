@@ -107,6 +107,7 @@ let tempHistory = [];
 
 // VARIÁVEIS DE CONTROLE DE VIEW
 let currentMainView = 'board'; // 'board', 'calendar', 'gantt', 'whiteboard'
+let currentZoom = 1; // NOVO: Variável global de controle de zoom do Whiteboard
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
@@ -1260,16 +1261,37 @@ function changeGanttZoom(mode) {
     }
 }
 
-
 // ============================================
 // WHITEBOARD (COM FIREBASE SYNC)
 // ============================================
 let draggedStickyId = null;
 let offset = [0, 0];
 
+// NOVA VARIÁVEL GLOBAL PARA O ZOOM DO WHITEBOARD
+function zoomWhiteboard(delta) {
+    currentZoom += delta;
+    if (currentZoom < 0.3) currentZoom = 0.3; // Zoom mínimo
+    if (currentZoom > 3) currentZoom = 3;     // Zoom máximo
+
+    document.getElementById('whiteboardCanvas').style.transform = `scale(${currentZoom})`;
+    document.getElementById('zoomDisplay').innerText = Math.round(currentZoom * 100) + '%';
+}
+
+// NOVA FUNÇÃO PARA MUDAR A COR DO POST-IT
+function changeStickyColor(id, color) {
+    const note = stickyNotes.find(n => n.id === id);
+    if (note) {
+        note.color = color;
+        document.getElementById(id).style.background = color;
+        syncToFirebase();
+    }
+}
+
 function renderWhiteboard() {
     const canvas = document.getElementById('whiteboardCanvas');
     canvas.innerHTML = '';
+
+    const palette = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa']; // Amarelo, Verde, Azul, Rosa, Laranja
 
     stickyNotes.forEach(note => {
         const sticky = document.createElement('div');
@@ -1280,8 +1302,14 @@ function renderWhiteboard() {
         sticky.style.top = note.top;
         sticky.style.background = note.color;
 
+        // INJEÇÃO DA PALETA DE CORES DENTRO DO HEADER DO POST-IT
+        let colorsHtml = palette.map(c =>
+            `<div class="color-dot" style="background: ${c}" onclick="changeStickyColor('${note.id}', '${c}')"></div>`
+        ).join('');
+
         sticky.innerHTML = `
             <div class="sticky-header">
+                <div class="sticky-colors">${colorsHtml}</div>
                 <button class="sticky-delete" onclick="deleteSticky('${note.id}')" title="Excluir">✖</button>
             </div>
             <textarea class="sticky-content" placeholder="Digite sua ideia..." onchange="updateStickyText('${note.id}', this.value)">${note.text || ''}</textarea>
@@ -1290,7 +1318,10 @@ function renderWhiteboard() {
         sticky.addEventListener('dragstart', (e) => {
             draggedStickyId = note.id;
             const rect = sticky.getBoundingClientRect();
-            offset = [e.clientX - rect.left, e.clientY - rect.top];
+
+            // O cálculo do offset agora considera a escala atual do zoom!
+            offset = [(e.clientX - rect.left) / currentZoom, (e.clientY - rect.top) / currentZoom];
+
             e.dataTransfer.effectAllowed = "move";
             e.stopPropagation();
         });
@@ -1306,11 +1337,12 @@ function addStickyNote() {
 
     const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
 
+    // O novo post-it nasce exatamente onde o usuário está olhando, corrigido pelo Zoom
     const newNote = {
         id: 'sticky-' + Date.now(),
         text: '',
-        left: (sl + Math.random() * 200 + 50) + 'px',
-        top: (st + Math.random() * 100 + 50) + 'px',
+        left: (sl / currentZoom + Math.random() * 100 + 50) + 'px',
+        top: (st / currentZoom + Math.random() * 100 + 50) + 'px',
         color: colors[Math.floor(Math.random() * colors.length)]
     };
 
@@ -1340,15 +1372,15 @@ function dropSticky(e) {
     if (draggedStickyId) {
         const canvasRect = document.getElementById('whiteboardCanvas').getBoundingClientRect();
 
-        let x = e.clientX - canvasRect.left - offset[0];
-        let y = e.clientY - canvasRect.top - offset[1];
+        // Cálculo exato da nova posição considerando o Zoom atual
+        let x = (e.clientX - canvasRect.left) / currentZoom - offset[0];
+        let y = (e.clientY - canvasRect.top) / currentZoom - offset[1];
 
         const noteIndex = stickyNotes.findIndex(n => n.id === draggedStickyId);
         if (noteIndex > -1) {
             stickyNotes[noteIndex].left = x + 'px';
             stickyNotes[noteIndex].top = y + 'px';
 
-            // Atualiza direto no DOM para nao piscar o focus do input
             const domEl = document.getElementById(draggedStickyId);
             if (domEl) {
                 domEl.style.left = stickyNotes[noteIndex].left;

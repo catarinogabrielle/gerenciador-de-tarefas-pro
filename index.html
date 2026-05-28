@@ -404,6 +404,11 @@
         <div class="whiteboard-toolbar">
             <button class="btn-primary" onclick="addStickyNote()">+ Adicionar Post-it</button>
             <button class="btn-secondary" onclick="clearWhiteboard()">Limpar Quadro</button>
+            <div style="width: 1px; background: var(--border); margin: 0 5px; height: 38px;"></div>
+            <button class="btn-secondary header-btn" onclick="zoomWhiteboard(-0.1)" title="Diminuir Zoom">➖</button>
+            <span id="zoomDisplay"
+                style="display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; width: 45px; color: var(--text-main);">100%</span>
+            <button class="btn-secondary header-btn" onclick="zoomWhiteboard(0.1)" title="Aumentar Zoom">➕</button>
         </div>
         <div class="whiteboard-canvas" id="whiteboardCanvas" ondragover="allowDrop(event)" ondrop="dropSticky(event)">
         </div>
