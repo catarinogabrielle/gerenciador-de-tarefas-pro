@@ -715,7 +715,9 @@ async function saveTaskBtnClick() {
         newTaskData.id = 'id-' + Date.now();
         newTaskData.status = currentTargetColumn || (columns.length > 0 ? columns[0].id : 'todo');
         newTaskData.history = [{ date: new Date().toISOString(), user: currentUser.email, action: 'Criou a tarefa' }];
-        tasks.push(newTaskData);
+
+        // CORREÇÃO AQUI: unshift() em vez de push() coloca o card novo no TOPO da coluna
+        tasks.unshift(newTaskData);
     }
 
     save();
