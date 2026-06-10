@@ -892,12 +892,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .template-btn {
-  text-align: left;
-  height: auto;
+  background: transparent;
+  color: var(--text-sub);
+  border: 1px solid var(--border);
   padding: 15px;
-  justify-content: flex-start;
-  align-items: flex-start;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-direction: column;
+}
+
+.template-btn:hover {
+  background: var(--bg-column);
+  color: var(--text-main);
 }
 
 .board {
