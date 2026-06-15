@@ -131,7 +131,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
 
         .header-btn {
@@ -201,6 +201,82 @@
         .editable-title:focus {
             border-color: var(--accent);
             background: var(--bg-card);
+        }
+
+        /* --- NOVO MENU DROPDOWN (3 PONTOS) --- */
+        .header-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .header-dropdown-btn {
+            font-size: 1.2rem;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+        }
+
+        .header-dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            width: 240px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px;
+            z-index: 1000;
+        }
+
+        .header-dropdown-menu.active {
+            display: flex;
+        }
+
+        .dropdown-item {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 10px 12px;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-column);
+            color: var(--accent);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        .dropdown-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            padding: 4px 8px;
+        }
+
+        .w-100 {
+            width: 100% !important;
         }
 
         .sidebar {
@@ -2432,19 +2508,34 @@
             <button class="btn-secondary header-btn" onclick="switchMainView('whiteboard')" id="btnViewWhiteboard">🎨
                 Whiteboard</button>
 
-            <button class="btn-secondary header-btn" onclick="addColumn()" id="btnAddColBtn"
-                style="margin-left: 10px;">+ Coluna</button>
-            <button class="btn-secondary header-btn" onclick="toggleMyTasks()" id="btnMyTasks">🙋‍♂️ Minhas
-                Tarefas</button>
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar..."
                 oninput="applyFilters()">
-            <select id="filterTag" onchange="applyFilters()" class="filter-select">
-                <option value="all">🏷️ Todas as Tags</option>
-            </select>
-            <select id="sortTasks" onchange="applyFilters()" class="filter-select">
-                <option value="newest">📅 Mais Recentes</option>
-                <option value="oldest">⏳ Mais Antigas</option>
-            </select>
+
+            <div class="header-dropdown">
+                <button class="btn-secondary header-btn header-dropdown-btn" onclick="toggleHeaderMenu(event)"
+                    title="Opções e Filtros">⋮</button>
+
+                <div class="header-dropdown-menu" id="headerDropdownMenu">
+                    <button class="dropdown-item" onclick="addColumn(); closeHeaderMenu()" id="btnAddColBtn">+ Nova
+                        Coluna</button>
+                    <button class="dropdown-item" onclick="toggleMyTasks(); closeHeaderMenu()" id="btnMyTasks">🙋‍♂️
+                        Minhas Tarefas</button>
+
+                    <div class="dropdown-divider"></div>
+
+                    <div class="dropdown-label">Filtrar por Tag</div>
+                    <select id="filterTag" onchange="applyFilters()" class="filter-select w-100"
+                        style="margin-bottom: 8px;">
+                        <option value="all">🏷️ Todas as Tags</option>
+                    </select>
+
+                    <div class="dropdown-label">Ordenar</div>
+                    <select id="sortTasks" onchange="applyFilters()" class="filter-select w-100">
+                        <option value="newest">📅 Mais Recentes</option>
+                        <option value="oldest">⏳ Mais Antigas</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -2557,11 +2648,32 @@
             return '';
         }
 
-        // CORREÇÃO: Função de escape agora é declarada de forma global e segura para evitar que o Termômetro trave
         function escapeHtml(text) {
             if (!text) return '';
             return text.toString().replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
         }
+
+        // ============================================
+        // LOGICA DO MENU 3 PONTOS (DROPDOWN)
+        // ============================================
+        function toggleHeaderMenu(e) {
+            e.stopPropagation(); // Evita que o clique feche imediatamente
+            document.getElementById('headerDropdownMenu').classList.toggle('active');
+        }
+
+        function closeHeaderMenu() {
+            const menu = document.getElementById('headerDropdownMenu');
+            if (menu) menu.classList.remove('active');
+        }
+
+        // Fechar menu se clicar fora dele
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('headerDropdownMenu');
+            if (menu && menu.classList.contains('active') && !e.target.closest('.header-dropdown')) {
+                menu.classList.remove('active');
+            }
+        });
+
 
         // ============================================
         // CONFIGURAÇÃO DO FIREBASE
@@ -3011,8 +3123,9 @@
         function toggleMyTasks() {
             filterMyTasksOnly = !filterMyTasksOnly;
             const btn = document.getElementById('btnMyTasks');
-            btn.style.background = filterMyTasksOnly ? 'var(--accent)' : 'transparent';
-            btn.style.color = filterMyTasksOnly ? 'white' : 'var(--text-sub)';
+            if (btn) {
+                btn.style.color = filterMyTasksOnly ? 'var(--accent)' : 'var(--text-main)';
+            }
             render();
         }
 
@@ -3516,28 +3629,29 @@
                 }
             }
 
+            // Controle de exibição do botão + Coluna dentro do dropdown
+            const btnAddCol = document.getElementById('btnAddColBtn');
+            if (btnAddCol) {
+                btnAddCol.style.display = viewId === 'board' ? 'flex' : 'none';
+            }
+
             if (viewId === 'board') {
                 document.getElementById('boardMain').style.display = 'flex';
                 document.getElementById('btnViewBoard').classList.add('active-view');
-                document.getElementById('btnAddColBtn').style.display = 'block';
                 render();
             } else if (viewId === 'calendar') {
                 document.getElementById('calendarMain').style.display = 'flex';
                 document.getElementById('btnViewCal').classList.add('active-view');
-                document.getElementById('btnAddColBtn').style.display = 'none';
                 renderCalendar();
             } else if (viewId === 'gantt') {
                 document.getElementById('ganttMain').style.display = 'flex';
                 document.getElementById('btnViewGantt').classList.add('active-view');
-                document.getElementById('btnAddColBtn').style.display = 'none';
                 renderGantt();
             } else if (viewId === 'whiteboard') {
                 document.getElementById('whiteboardMain').style.display = 'block';
                 document.getElementById('btnViewWhiteboard').classList.add('active-view');
-                document.getElementById('btnAddColBtn').style.display = 'none';
             } else if (viewId === 'portfolio') {
                 document.getElementById('portfolioMain').style.display = 'flex';
-                document.getElementById('btnAddColBtn').style.display = 'none';
                 renderPortfolio();
 
                 if (window.innerWidth <= 850) {
