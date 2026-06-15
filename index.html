@@ -1709,6 +1709,7 @@
             overflow: hidden;
             box-shadow: var(--shadow-sm);
             max-height: 600px;
+            transition: border-color 0.3s ease;
         }
 
         .port-card-header {
@@ -1718,7 +1719,7 @@
         }
 
         .port-card-title {
-            margin: 0 0 8px 0;
+            margin: 0 0 12px 0;
             font-size: 15px;
             font-weight: 800;
             color: var(--text-main);
@@ -1859,6 +1860,43 @@
             padding: 0 12px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        /* Badges do Termômetro */
+        .thermo-badge {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .thermo-badge.red {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .thermo-badge.yellow {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .thermo-badge.green {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .thermo-badge.gray {
+            background: rgba(113, 113, 122, 0.15);
+            color: var(--text-sub);
+            border: 1px solid rgba(113, 113, 122, 0.3);
         }
 
         @media (max-width: 850px) {
@@ -2351,8 +2389,7 @@
 
         <button class="btn-primary"
             style="width: 100%; margin-top: 15px; background: #8b5cf6; border-color: #8b5cf6; color: white;"
-            onclick="switchMainView('portfolio')" id="btnViewPortfolio">📊 Visão Geral</button>
-
+            onclick="switchMainView('portfolio')" id="btnViewPortfolio">🌡️ Termômetro Geral</button>
         <button id="btnShareBoard" class="btn-primary"
             style="width: 100%; margin-top: 15px; background: #10b981; border-color: #10b981;"
             onclick="openShareModal()">👥 Compartilhar Quadro</button>
@@ -2452,14 +2489,14 @@
     <main class="portfolio-view" id="portfolioMain" style="display: none;">
         <div class="port-header">
             <div>
-                <h2 style="margin:0; font-size: 24px; font-weight:800; color: var(--text-main);">Visão Geral dos
-                    Projetos</h2>
-                <p style="margin:5px 0 0; color:var(--text-sub); font-weight: 600;">Progresso e tarefas de todos os
-                    quadros</p>
+                <h2 style="margin:0; font-size: 24px; font-weight:800; color: var(--text-main);">Termômetro de Projetos
+                </h2>
+                <p style="margin:5px 0 0; color:var(--text-sub); font-weight: 600;">Progresso e ritmo de todos os
+                    quadros (Verde, Amarelo, Vermelho)</p>
             </div>
             <div class="port-summary">
                 <div class="port-summary-row">
-                    <span>Avanço Global</span>
+                    <span>Média Global</span>
                     <span id="portGeneralPercent">0%</span>
                 </div>
                 <div class="port-progress-bg">
@@ -2768,7 +2805,7 @@
 
                             if (needsRender && currentMainView === 'board') render();
                             if (needsWhiteboardRender && currentMainView === 'whiteboard') renderWhiteboard();
-                            if (currentMainView === 'portfolio') renderPortfolio(); // Atualiza painel global se aberto
+                            if (currentMainView === 'portfolio') renderPortfolio();
                         }
 
                         if (globalLoader && !globalLoader.classList.contains('hidden')) {
@@ -2854,7 +2891,6 @@
             }, 600);
         }
 
-        // NOVA FUNÇÃO: Sincroniza um quadro específico pelo ID (necessário para a View Global de Portfólio)
         function syncSpecificBoardToFirebase(bId) {
             if (!currentUser || !bId) return;
             const bData = allBoardsData[bId];
@@ -2865,12 +2901,10 @@
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).catch(err => console.error("Erro ao salvar board específico:", err));
 
-            // Se o quadro alterado for o quadro que está aberto no fundo, atualizamos as vars globais
             if (bId === currentBoardId) {
                 tasks = bData.tasks;
             }
         }
-
 
         function openTemplateModal() { document.getElementById('templateOverlay').classList.add('active'); }
         function closeTemplateModal() { document.getElementById('templateOverlay').classList.remove('active'); }
@@ -2908,7 +2942,6 @@
                 syncToFirebase();
                 loadBoardData(boardId);
             } else {
-                // Se está na tela de portfólio e clica na sidebar num quadro, troca e vai pro quadro
                 loadBoardData(boardId);
                 switchMainView('board');
             }
@@ -3413,20 +3446,17 @@
         function switchMainView(viewId) {
             currentMainView = viewId;
 
-            // Esconde todos
             document.getElementById('boardMain').style.display = 'none';
             document.getElementById('calendarMain').style.display = 'none';
             document.getElementById('ganttMain').style.display = 'none';
             document.getElementById('whiteboardMain').style.display = 'none';
             if (document.getElementById('portfolioMain')) document.getElementById('portfolioMain').style.display = 'none';
 
-            // Remove classe ativa dos botões
             document.getElementById('btnViewBoard').classList.remove('active-view');
             document.getElementById('btnViewCal').classList.remove('active-view');
             document.getElementById('btnViewGantt').classList.remove('active-view');
             document.getElementById('btnViewWhiteboard').classList.remove('active-view');
 
-            // Tenta remover a classe do botão do mixer no sidebar
             const btnPortfolio = document.getElementById('btnViewPortfolio');
             if (btnPortfolio) {
                 if (viewId === 'portfolio') {
@@ -3436,7 +3466,6 @@
                 }
             }
 
-            // Mostra o selecionado
             if (viewId === 'board') {
                 document.getElementById('boardMain').style.display = 'flex';
                 document.getElementById('btnViewBoard').classList.add('active-view');
@@ -3986,48 +4015,79 @@
                 return;
             }
 
-            grid.innerHTML = "";
-
             let totalGlobalTasks = 0;
             let totalGlobalDone = 0;
+            const boardsAnalysis = [];
 
-            // Iterar por todos os quadros reais do Firebase
+            // Passo 1: Calcular médias globais para poder comparar no termômetro
             Object.keys(allBoardsData).forEach(bId => {
                 const bData = allBoardsData[bId];
-                const bTitle = boards.find(b => b.id === bId)?.title || 'Quadro Desconhecido';
                 const bTasks = bData.tasks || [];
                 const bCols = bData.columns || [];
 
-                // Descobrir qual é a coluna de conclusão deste quadro específico
                 let doneColId = 'done';
                 const doneColObj = bCols.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
-                if (doneColObj) {
-                    doneColId = doneColObj.id;
-                } else if (bCols.length > 0) {
-                    doneColId = bCols[bCols.length - 1].id; // assume a última coluna se não achar pelo nome
-                }
+                if (doneColObj) doneColId = doneColObj.id;
+                else if (bCols.length > 0) doneColId = bCols[bCols.length - 1].id;
 
-                // Descobrir qual é a primeira coluna (para onde a tarefa volta se for desmarcada)
                 const todoColId = bCols.length > 0 ? bCols[0].id : 'todo';
 
                 let boardDoneTasks = 0;
+                bTasks.forEach(t => {
+                    if (t.status === doneColId) boardDoneTasks++;
+                });
+
+                totalGlobalTasks += bTasks.length;
+                totalGlobalDone += boardDoneTasks;
+
+                boardsAnalysis.push({
+                    bId,
+                    bTitle: boards.find(b => b.id === bId)?.title || 'Quadro Desconhecido',
+                    bTasks,
+                    bCols,
+                    doneColId,
+                    todoColId,
+                    boardDoneTasks,
+                    pct: bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0
+                });
+            });
+
+            const globalPct = totalGlobalTasks > 0 ? Math.round((totalGlobalDone / totalGlobalTasks) * 100) : 0;
+
+            grid.innerHTML = "";
+
+            // Passo 2: Construir interface de cada quadro usando a lógica do termômetro
+            boardsAnalysis.sort((a, b) => b.pct - a.pct).forEach(board => {
+
+                // Lógica do Termômetro
+                const diff = board.pct - globalPct;
+                let thermoClass = 'yellow';
+                let thermoText = '🟡 No Ritmo';
+                let thermoColor = '#f59e0b'; // Amarelo
+
+                if (board.bTasks.length === 0) {
+                    thermoClass = 'gray';
+                    thermoText = '⚪ Vazio';
+                    thermoColor = 'var(--text-sub)';
+                } else if (diff <= -12) {
+                    thermoClass = 'red';
+                    thermoText = '🔴 Atrasado';
+                    thermoColor = '#ef4444';
+                } else if (diff >= 12) {
+                    thermoClass = 'green';
+                    thermoText = '🟢 Adiantado';
+                    thermoColor = '#10b981';
+                }
 
                 // Criar lista de tarefas HTML
-                const tasksHtml = bTasks.map(t => {
-                    const isDone = t.status === doneColId;
-
-                    totalGlobalTasks++;
-                    if (isDone) {
-                        boardDoneTasks++;
-                        totalGlobalDone++;
-                    }
-
+                const tasksHtml = board.bTasks.map(t => {
+                    const isDone = t.status === board.doneColId;
                     const tagColor = t.tag?.color || 'var(--accent)';
                     const tagName = t.tag?.name || (typeof t.tag === 'string' ? t.tag : '');
 
                     return `
                 <div class="port-task-item ${isDone ? "done" : ""}">
-                    <button class="port-check" onclick="togglePortfolioTask('${bId}', '${t.id}', '${isDone ? todoColId : doneColId}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
+                    <button class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}', '${isDone ? board.todoColId : board.doneColId}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
                         ${isDone ? "✓" : ""}
                     </button>
                     <div class="port-task-content">
@@ -4038,28 +4098,29 @@
             `;
                 }).join('');
 
-                const progressPct = bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0;
-
                 // Montar o Card do Quadro
                 const card = document.createElement("div");
                 card.className = "port-card";
+                card.style.borderColor = `color-mix(in srgb, ${thermoColor} 50%, var(--border))`;
+
                 card.innerHTML = `
             <div class="port-card-header">
                 <h3 class="port-card-title">
-                    <span style="cursor:pointer;" onclick="switchBoard('${bId}')" title="Abrir quadro">${escapeHtml(bTitle)} ↗</span>
+                    <span style="cursor:pointer;" onclick="switchBoard('${board.bId}')" title="Abrir quadro">${escapeHtml(board.bTitle)} ↗</span>
+                    <span class="thermo-badge ${thermoClass}">${thermoText}</span>
                 </h3>
                 <div class="port-progress-bg">
-                    <div class="port-progress-fill" style="width: ${progressPct}%;"></div>
+                    <div class="port-progress-fill" style="width: ${board.pct}%; background: ${thermoColor};"></div>
                 </div>
                 <div class="port-stats">
-                    <span>${boardDoneTasks} de ${bTasks.length} concluídas</span>
-                    <span>${progressPct}%</span>
+                    <span>${board.boardDoneTasks} de ${board.bTasks.length} concluídas</span>
+                    <span style="color: ${thermoColor}; font-weight: 800;">${board.pct}%</span>
                 </div>
             </div>
             <div class="port-tasks">
                 ${tasksHtml || '<span style="font-size:12px; color:var(--text-sub);">Nenhuma tarefa neste quadro.</span>'}
             </div>
-            <form class="port-add-form" onsubmit="addPortfolioTask(event, '${bId}', '${todoColId}')">
+            <form class="port-add-form" onsubmit="addPortfolioTask(event, '${board.bId}', '${board.todoColId}')">
                 <input class="port-input" placeholder="Adicionar tarefa rápida..." required maxlength="80">
                 <button class="port-btn-add" type="submit">+</button>
             </form>
@@ -4069,7 +4130,6 @@
             });
 
             // Atualizar o cabeçalho global
-            const globalPct = totalGlobalTasks > 0 ? Math.round((totalGlobalDone / totalGlobalTasks) * 100) : 0;
             document.getElementById("portGeneralPercent").textContent = `${globalPct}%`;
             document.getElementById("portGeneralFill").style.width = `${globalPct}%`;
         }
@@ -4102,8 +4162,8 @@
                 if (!bTasks[taskIndex].history) bTasks[taskIndex].history = [];
                 bTasks[taskIndex].history.unshift({
                     date: new Date().toISOString(),
-                    user: currentUser ? currentUser.email : 'Dashboard Global',
-                    action: `Moveu tarefa via Visão Geral`
+                    user: currentUser ? currentUser.email : 'Termômetro Global',
+                    action: `Moveu tarefa via Termômetro Geral`
                 });
 
                 // Sincronizar com o Firebase
@@ -4130,8 +4190,8 @@
                 priority: 'Média',
                 history: [{
                     date: new Date().toISOString(),
-                    user: currentUser ? currentUser.email : 'Dashboard Global',
-                    action: 'Criou a tarefa via Visão Geral'
+                    user: currentUser ? currentUser.email : 'Termômetro Global',
+                    action: 'Criou a tarefa via Termômetro Geral'
                 }]
             };
 
