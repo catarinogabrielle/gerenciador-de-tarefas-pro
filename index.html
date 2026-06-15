@@ -2544,6 +2544,28 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <script>
+        // ============================================
+        // FUNÇÕES UTILITÁRIAS GLOBAIS (NÃO REMOVER)
+        // ============================================
+        function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
+
+        function formatDate(s) {
+            if (s) {
+                const d = new Date(s);
+                return new Date(d.getTime() + d.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            }
+            return '';
+        }
+
+        // CORREÇÃO: Função de escape agora é declarada de forma global e segura para evitar que o Termômetro trave
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString().replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
+        }
+
+        // ============================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ============================================
         const firebaseConfig = {
             apiKey: "AIzaSyDyWy1LpQesOhWCZhx1eB2xUJckuJyb7aU",
             authDomain: "gerenciador-de-sprint-pro.firebaseapp.com",
@@ -2657,7 +2679,7 @@
 
         let tagsChartInstance = null;
         let statusChartInstance = null;
-        priorityChartInstance = null;
+        let priorityChartInstance = null;
         let assigneeChartInstance = null;
 
         let modalSelectedAssignees = [];
@@ -2772,7 +2794,6 @@
 
                         if (!currentBoardId || !newAllBoardsData[currentBoardId]) {
                             allBoardsData = newAllBoardsData;
-                            // MODIFICADO: Tenta abrir o último quadro salvo no localStorage
                             const savedBoardId = localStorage.getItem('hud_last_board_id');
                             if (savedBoardId && newAllBoardsData[savedBoardId]) {
                                 loadBoardData(savedBoardId);
@@ -2837,7 +2858,6 @@
             const bData = allBoardsData[boardId];
             if (!bData) return;
 
-            // MODIFICADO: Salva o ID do quadro aberto no localStorage para persistência
             localStorage.setItem('hud_last_board_id', boardId);
 
             tasks = bData.tasks || [];
@@ -3008,7 +3028,6 @@
             const board = document.getElementById('boardMain');
             board.innerHTML = '';
 
-            // Filtragem Básica
             let filteredTasks = tasks.filter(t => {
                 if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
                 const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
@@ -3019,11 +3038,12 @@
                 return matchTag && matchMyTasks && (term === '' || titleMatch);
             });
 
-            // MODIFICADO: Lógica de Ordenação por Data de Criação (Extraído do ID numérico)
             const sortVal = document.getElementById('sortTasks')?.value || 'newest';
             filteredTasks.sort((a, b) => {
-                const timeA = parseInt(a.id.replace('id-', '')) || 0;
-                const timeB = parseInt(b.id.replace('id-', '')) || 0;
+                const idA = String(a.id || '');
+                const idB = String(b.id || '');
+                const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
+                const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
                 return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
             });
 
@@ -3679,8 +3699,6 @@
         function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
         function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); applyBackground(currentBg); if (document.getElementById('statsOverlay').classList.contains('active')) renderCharts(); }
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-        function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
-        function formatDate(s) { if (s) { const d = new Date(s); return new Date(d.getTime() + d.getTimezoneOffset() * 60000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); } return ''; }
 
         function updateMetrics(tl) {
             columns.forEach(c => {
