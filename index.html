@@ -2441,6 +2441,10 @@
             <select id="filterTag" onchange="applyFilters()" class="filter-select">
                 <option value="all">🏷️ Todas as Tags</option>
             </select>
+            <select id="sortTasks" onchange="applyFilters()" class="filter-select">
+                <option value="newest">📅 Mais Recentes</option>
+                <option value="oldest">⏳ Mais Antigas</option>
+            </select>
         </div>
     </header>
 
@@ -2653,7 +2657,7 @@
 
         let tagsChartInstance = null;
         let statusChartInstance = null;
-        let priorityChartInstance = null;
+        priorityChartInstance = null;
         let assigneeChartInstance = null;
 
         let modalSelectedAssignees = [];
@@ -2768,7 +2772,13 @@
 
                         if (!currentBoardId || !newAllBoardsData[currentBoardId]) {
                             allBoardsData = newAllBoardsData;
-                            if (boards.length > 0) loadBoardData(boards[0].id);
+                            // MODIFICADO: Tenta abrir o último quadro salvo no localStorage
+                            const savedBoardId = localStorage.getItem('hud_last_board_id');
+                            if (savedBoardId && newAllBoardsData[savedBoardId]) {
+                                loadBoardData(savedBoardId);
+                            } else if (boards.length > 0) {
+                                loadBoardData(boards[0].id);
+                            }
                         } else {
                             const activeData = newAllBoardsData[currentBoardId];
                             let needsRender = false;
@@ -2826,6 +2836,9 @@
             currentBoardId = boardId;
             const bData = allBoardsData[boardId];
             if (!bData) return;
+
+            // MODIFICADO: Salva o ID do quadro aberto no localStorage para persistência
+            localStorage.setItem('hud_last_board_id', boardId);
 
             tasks = bData.tasks || [];
             columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
@@ -2995,7 +3008,8 @@
             const board = document.getElementById('boardMain');
             board.innerHTML = '';
 
-            const filteredTasks = tasks.filter(t => {
+            // Filtragem Básica
+            let filteredTasks = tasks.filter(t => {
                 if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
                 const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
                 const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
@@ -3003,6 +3017,14 @@
                 const term = searchTerm ? searchTerm.toLowerCase() : '';
                 const titleMatch = t.text.toLowerCase().includes(term);
                 return matchTag && matchMyTasks && (term === '' || titleMatch);
+            });
+
+            // MODIFICADO: Lógica de Ordenação por Data de Criação (Extraído do ID numérico)
+            const sortVal = document.getElementById('sortTasks')?.value || 'newest';
+            filteredTasks.sort((a, b) => {
+                const timeA = parseInt(a.id.replace('id-', '')) || 0;
+                const timeB = parseInt(b.id.replace('id-', '')) || 0;
+                return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
             });
 
             columns.forEach(col => {
@@ -3465,7 +3487,6 @@
                 }
             }
 
-            // CONTROLE DO FOOTER: Esconde no Portfólio e no Whiteboard
             const appFooter = document.getElementById('appFooter');
             if (appFooter) {
                 if (viewId === 'portfolio' || viewId === 'whiteboard') {
@@ -4028,7 +4049,6 @@
             let totalGlobalDone = 0;
             const boardsAnalysis = [];
 
-            // Passo 1: Calcular médias globais para poder comparar no termômetro
             Object.keys(allBoardsData).forEach(bId => {
                 const bData = allBoardsData[bId];
                 const bTasks = bData.tasks || [];
@@ -4065,14 +4085,12 @@
 
             grid.innerHTML = "";
 
-            // Passo 2: Construir interface de cada quadro usando a lógica do termômetro
             boardsAnalysis.sort((a, b) => b.pct - a.pct).forEach(board => {
 
-                // Lógica do Termômetro
                 const diff = board.pct - globalPct;
                 let thermoClass = 'yellow';
                 let thermoText = '🟡 No Ritmo';
-                let thermoColor = '#f59e0b'; // Amarelo
+                let thermoColor = '#f59e0b';
 
                 if (board.bTasks.length === 0) {
                     thermoClass = 'gray';
@@ -4088,7 +4106,6 @@
                     thermoColor = '#10b981';
                 }
 
-                // Criar lista de tarefas HTML
                 const tasksHtml = board.bTasks.map(t => {
                     const isDone = t.status === board.doneColId;
                     const tagColor = t.tag?.color || 'var(--accent)';
@@ -4107,7 +4124,6 @@
             `;
                 }).join('');
 
-                // Montar o Card do Quadro
                 const card = document.createElement("div");
                 card.className = "port-card";
                 card.style.borderColor = `color-mix(in srgb, ${thermoColor} 50%, var(--border))`;
@@ -4138,18 +4154,10 @@
                 grid.appendChild(card);
             });
 
-            // Atualizar o cabeçalho global
             document.getElementById("portGeneralPercent").textContent = `${globalPct}%`;
             document.getElementById("portGeneralFill").style.width = `${globalPct}%`;
         }
 
-        // Função auxiliar para evitar injeção de HTML
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.toString().replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
-        }
-
-        // Alternar status da tarefa diretamente pelo Dashboard de Portfólio
         function togglePortfolioTask(boardId, taskId, newStatusId) {
             if (!allBoardsData[boardId]) return;
 
@@ -4159,7 +4167,6 @@
             if (taskIndex > -1) {
                 bTasks[taskIndex].status = newStatusId;
 
-                // Se foi para concluído, marca a data de encerramento
                 const bCols = allBoardsData[boardId].columns || [];
                 const targetCol = bCols.find(c => c.id === newStatusId);
                 if (targetCol && (targetCol.id === 'done' || targetCol.title.toLowerCase().includes('conclu'))) {
@@ -4167,7 +4174,6 @@
                     fireConfetti();
                 }
 
-                // Histórico
                 if (!bTasks[taskIndex].history) bTasks[taskIndex].history = [];
                 bTasks[taskIndex].history.unshift({
                     date: new Date().toISOString(),
@@ -4175,15 +4181,11 @@
                     action: `Moveu tarefa via Termômetro Geral`
                 });
 
-                // Sincronizar com o Firebase
                 syncSpecificBoardToFirebase(boardId);
-
-                // Re-renderizar a tela atual
                 renderPortfolio();
             }
         }
 
-        // Adicionar tarefa rápida pelo Dashboard de Portfólio
         function addPortfolioTask(event, boardId, firstColId) {
             event.preventDefault();
             const input = event.target.querySelector('input');
