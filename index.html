@@ -2529,8 +2529,9 @@
                         <option value="all">🏷️ Todas as Tags</option>
                     </select>
 
-                    <div class="dropdown-label">Ordenar</div>
+                    <div class="dropdown-label">Ordenar (Apenas Visual)</div>
                     <select id="sortTasks" onchange="applyFilters()" class="filter-select w-100">
+                        <option value="manual">↕️ Ordem Manual</option>
                         <option value="newest">📅 Mais Recentes</option>
                         <option value="oldest">⏳ Mais Antigas</option>
                     </select>
@@ -2657,7 +2658,7 @@
         // LOGICA DO MENU 3 PONTOS (DROPDOWN)
         // ============================================
         function toggleHeaderMenu(e) {
-            e.stopPropagation(); // Evita que o clique feche imediatamente
+            e.stopPropagation();
             document.getElementById('headerDropdownMenu').classList.toggle('active');
         }
 
@@ -2666,7 +2667,6 @@
             if (menu) menu.classList.remove('active');
         }
 
-        // Fechar menu se clicar fora dele
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('headerDropdownMenu');
             if (menu && menu.classList.contains('active') && !e.target.closest('.header-dropdown')) {
@@ -3151,14 +3151,16 @@
                 return matchTag && matchMyTasks && (term === '' || titleMatch);
             });
 
-            const sortVal = document.getElementById('sortTasks')?.value || 'newest';
-            filteredTasks.sort((a, b) => {
-                const idA = String(a.id || '');
-                const idB = String(b.id || '');
-                const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
-                const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
-                return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
-            });
+            const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+            if (sortVal !== 'manual') {
+                filteredTasks.sort((a, b) => {
+                    const idA = String(a.id || '');
+                    const idB = String(b.id || '');
+                    const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
+                    const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
+                    return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
+                });
+            }
 
             columns.forEach(col => {
                 const columnEl = document.createElement('div');
@@ -3274,18 +3276,28 @@
                             }
                         }
 
-                        const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
-                        let newTasks = [];
-                        let map = new Map(tasks.map(t => [t.id, t]));
+                        const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+                        const tagFilter = document.getElementById('filterTag')?.value || 'all';
+                        const searchVal = document.getElementById('searchInput')?.value || '';
+                        const myTasksOnly = filterMyTasksOnly;
 
-                        newOrderIds.forEach(id => {
-                            if (map.has(id)) {
-                                newTasks.push(map.get(id));
-                                map.delete(id);
-                            }
-                        });
+                        const isFiltered = sortVal !== 'manual' || tagFilter !== 'all' || searchVal !== '' || myTasksOnly;
 
-                        tasks = [...newTasks, ...Array.from(map.values())];
+                        if (!isFiltered) {
+                            const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
+                            let newTasks = [];
+                            let map = new Map(tasks.map(t => [t.id, t]));
+
+                            newOrderIds.forEach(id => {
+                                if (map.has(id)) {
+                                    newTasks.push(map.get(id));
+                                    map.delete(id);
+                                }
+                            });
+
+                            tasks = [...newTasks, ...Array.from(map.values())];
+                        }
+
                         syncToFirebase();
                         setTimeout(() => { render(); }, 50);
                     }
@@ -3629,7 +3641,6 @@
                 }
             }
 
-            // Controle de exibição do botão + Coluna dentro do dropdown
             const btnAddCol = document.getElementById('btnAddColBtn');
             if (btnAddCol) {
                 btnAddCol.style.display = viewId === 'board' ? 'flex' : 'none';
