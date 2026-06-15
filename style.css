@@ -67,7 +67,6 @@ body {
   transition: background 0.3s;
 }
 
-/* --- Loading Global --- */
 .global-loader {
   position: fixed;
   inset: 0;
@@ -1433,7 +1432,6 @@ footer {
   border-bottom: none;
 }
 
-/* --- Estilos do Cronograma (Frappe Gantt Interativo) --- */
 .gantt-view {
   display: flex;
   flex-direction: column;
@@ -1472,7 +1470,6 @@ footer {
   box-shadow: var(--shadow-sm);
 }
 
-/* Forçando o Tema do Gerenciador no Frappe Gantt */
 .gantt .grid-background {
   fill: var(--bg-body) !important;
 }
@@ -1494,7 +1491,6 @@ footer {
   stroke: var(--border) !important;
 }
 
-/* Textos (Meses e Dias) */
 .gantt .upper-text,
 .gantt .lower-text {
   fill: var(--text-main) !important;
@@ -1502,7 +1498,6 @@ footer {
   font-weight: 600 !important;
 }
 
-/* Barras das Tarefas */
 .gantt .bar {
   fill: var(--accent) !important;
   stroke: transparent !important;
@@ -1519,13 +1514,11 @@ footer {
   font-size: 12px !important;
 }
 
-/* Corrige a faixa amarela padrão que marca o dia de "Hoje" */
 .gantt .today-highlight {
   fill: var(--accent) !important;
   opacity: 0.1 !important;
 }
 
-/* Tooltip do Gantt (Hover) */
 .gantt .details-container {
   background: var(--bg-sidebar) !important;
   border: 1px solid var(--border) !important;
@@ -1540,13 +1533,11 @@ footer {
   font-weight: 800 !important;
 }
 
-/* --- Estilos do Whiteboard (Miro Clone) --- */
 .whiteboard-view {
   flex: 1;
   position: relative;
   overflow: hidden;
   background-color: var(--bg-body);
-  /* Grid removed from here */
 }
 
 .whiteboard-toolbar {
@@ -1565,13 +1556,11 @@ footer {
 
 .whiteboard-canvas {
   width: 10000px;
-  /* Canvas gigante simulando infinito */
   height: 10000px;
   position: absolute;
   top: 0;
   left: 0;
   cursor: grab;
-  /* NOVA REGRA: Suaviza a animação do Zoom e joga a grid pra cá */
   background: radial-gradient(circle, var(--border) 1px, transparent 1px);
   background-size: 20px 20px;
   transform-origin: 0 0;
@@ -1606,7 +1595,6 @@ footer {
   margin-bottom: 5px;
 }
 
-/* NOVA REGRA: Bolinhas de Cores */
 .sticky-colors {
   display: flex;
   gap: 4px;
@@ -1652,12 +1640,7 @@ footer {
   border-color: var(--accent) !important;
 }
 
-/* ========================================================= */
-/* RESPONSIVIDADE (MOBILE FIXES APRIMORADOS)                 */
-/* ========================================================= */
 @media (max-width: 850px) {
-
-  /* Header & Navegação */
   header {
     padding: 15px;
     flex-direction: column;
@@ -1691,14 +1674,11 @@ footer {
 
   .sidebar {
     width: 85vw;
-    /* Ocupa quase a tela toda no mobile */
     max-width: 320px;
     left: -100%;
-    /* Esconde totalmente a sidebar fora da tela */
     padding: 1.5rem 1rem;
   }
 
-  /* Board (Kanban) */
   .board {
     padding: 15px;
     gap: 15px;
@@ -1709,11 +1689,9 @@ footer {
     width: 85vw;
   }
 
-  /* Modals Genéricos */
   .modal-overlay {
     padding: 10px;
     align-items: flex-start;
-    /* Evita que o modal suma no topo no mobile */
   }
 
   .modal-box {
@@ -1737,16 +1715,13 @@ footer {
     gap: 10px;
   }
 
-  /* Formulários e Inputs do Modal */
   .form-grid {
     grid-template-columns: 1fr !important;
-    /* Força 1 coluna em vez de ficar espremido */
     gap: 15px;
   }
 
   .form-row {
     flex-direction: column !important;
-    /* Força datas (Inicio e Fim) uma sobre a outra */
     gap: 15px !important;
   }
 
@@ -1759,27 +1734,22 @@ footer {
     margin: 0;
     display: flex;
     flex-direction: column-reverse;
-    /* Coloca o Cancelar embaixo e o Salvar em cima */
     gap: 10px;
   }
 
   .modal-actions button,
   .btn-delete-modal {
     width: 100% !important;
-    /* Estica todos os botões do rodapé */
     margin: 0 !important;
   }
 
-  /* Botões do Template Modal (Vazamento corrigido) */
   .template-btn {
     white-space: normal !important;
-    /* Permite que o texto quebre linha */
     height: auto;
     padding: 15px;
     line-height: 1.4;
   }
 
-  /* Gantt e Calendário */
   .gantt-view,
   .calendar-view {
     padding: 15px;
@@ -1791,7 +1761,6 @@ footer {
     align-items: flex-start;
     gap: 10px;
     position: relative;
-    /* Remove o position: fixed do calendário no mobile para não sobrepor */
     width: 100% !important;
   }
 
@@ -1806,15 +1775,12 @@ footer {
     padding-bottom: 5px;
   }
 
-  /* Dashboard / Relatórios */
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
-    /* KPIs agrupados em pares */
   }
 
   .charts-grid {
     grid-template-columns: 1fr !important;
-    /* Gráficos perfeitamente empilhados */
   }
 
   .chart-container {
@@ -1826,7 +1792,6 @@ footer {
     height: auto;
   }
 
-  /* Whiteboard */
   .whiteboard-toolbar {
     left: 10px;
     top: 10px;
@@ -1844,10 +1809,8 @@ footer {
 @media (max-width: 480px) {
   .kpi-grid {
     grid-template-columns: 1fr;
-    /* 1 KPI por linha em telas muito finas */
   }
 
-  /* Ajuste em inputs emparelhados lateralmente */
   .form-group>div {
     flex-wrap: wrap;
   }
@@ -1855,4 +1818,314 @@ footer {
   #modalTagInput {
     width: 100%;
   }
+}
+
+/* ========================================================= */
+/* MIXER YGAMING (OPERAÇÃO)                                  */
+/* ========================================================= */
+.mixer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  padding-bottom: 40px;
+}
+
+.mixer-channel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  min-height: 650px;
+}
+
+.mixer-channel-header {
+  min-height: 82px;
+  padding: 15px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.mixer-channel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.mixer-status {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.mixer-status.behind {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.mixer-status.ahead {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.mixer-status.balanced {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.mixer-console {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  padding: 18px 15px 10px;
+}
+
+.mixer-fader-wrap {
+  height: 280px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.mixer-scale {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--text-sub);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mixer-scale span:after {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 1px;
+  margin-left: 5px;
+  vertical-align: middle;
+  background: var(--border);
+}
+
+.mixer-rail {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 48px;
+  width: 8px;
+  border-radius: 8px;
+  background: linear-gradient(to top, #ef4444 0 30%, #f59e0b 30% 70%, #10b981 70%);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mixer-fader {
+  position: absolute;
+  z-index: 2;
+  width: 250px;
+  height: 36px;
+  left: -75px;
+  top: 122px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  transform: rotate(-90deg);
+  cursor: pointer;
+}
+
+.mixer-fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 44px;
+  border-radius: 5px;
+  border: 2px solid #18181b;
+  background: linear-gradient(90deg, #555, #222 45%, #777 50%, #222 55%, #555);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+.mixer-progress-info {
+  padding-top: 8px;
+}
+
+.mixer-percent {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.mixer-counter {
+  margin-top: 2px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mixer-controls {
+  display: flex;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.mixer-control-btn {
+  width: 36px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-column);
+  color: var(--text-main);
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.mixer-control-btn:hover {
+  background: var(--border);
+}
+
+.mixer-tasks {
+  padding: 5px 15px 15px;
+  flex: 1;
+}
+
+.mixer-tasks-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-sub);
+}
+
+.mixer-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mixer-task-item {
+  display: grid;
+  grid-template-columns: 22px 1fr 24px;
+  gap: 7px;
+  align-items: center;
+  min-height: 39px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-column);
+}
+
+.mixer-task-item.done {
+  opacity: 0.58;
+}
+
+.mixer-task-item.done .mixer-task-name {
+  text-decoration: line-through;
+}
+
+.mixer-check {
+  width: 21px;
+  height: 21px;
+  border: 1px solid var(--text-sub);
+  border-radius: 4px;
+  background: var(--bg-card);
+  cursor: pointer;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.mixer-task-item.done .mixer-check {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.mixer-task-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.mixer-remove {
+  border: 0;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.mixer-remove:hover {
+  color: #ef4444;
+}
+
+.mixer-add-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mixer-add-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-body);
+  color: var(--text-main);
+  outline: none;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.mixer-add-form input:focus {
+  border-color: var(--accent);
+}
+
+.mixer-add {
+  border: 0;
+  border-radius: 5px;
+  padding: 0 12px;
+  background: var(--text-main);
+  color: var(--bg-body);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.mixer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-column);
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+.mixer-reset {
+  border: 0;
+  background: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
 }

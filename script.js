@@ -26,14 +26,12 @@ auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
         loginScreen.style.display = 'none';
-        // Não removemos o loader aqui! Vamos deixar ele girando até o Firebase trazer as tarefas.
         loadFromFirebase();
     } else {
         currentUser = null;
         loginScreen.style.display = 'flex';
         if (dbListenerUnsubscribe) dbListenerUnsubscribe();
 
-        // Se não tiver usuário logado, remove o loader para ele ver a tela de login
         if (globalLoader) {
             globalLoader.classList.add('hidden');
             setTimeout(() => globalLoader.style.display = 'none', 400);
@@ -83,7 +81,7 @@ let currentBoardId = null;
 let boardTitle = '';
 let columns = [];
 let tasks = [];
-let stickyNotes = []; // NOVO: Estado para os Post-its do Whiteboard
+let stickyNotes = [];
 let currentBoardMembers = [];
 
 const defaultTags = [
@@ -105,9 +103,8 @@ let tempSubtasks = [];
 let tempComments = [];
 let tempHistory = [];
 
-// VARIÁVEIS DE CONTROLE DE VIEW
-let currentMainView = 'board'; // 'board', 'calendar', 'gantt', 'whiteboard'
-let currentZoom = 1; // NOVO: Variável global de controle de zoom do Whiteboard
+let currentMainView = 'board';
+let currentZoom = 1;
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
@@ -211,7 +208,6 @@ async function loadFromFirebase() {
 
                 boards = newBoards;
 
-                // VARIÁVEL DO LOADER
                 const globalLoader = document.getElementById('globalLoader');
 
                 if (boards.length === 0) {
@@ -219,7 +215,6 @@ async function loadFromFirebase() {
                         openTemplateModal();
                     }
 
-                    // Se for conta nova (zero quadros), oculta o loader
                     if (globalLoader && !globalLoader.classList.contains('hidden')) {
                         globalLoader.classList.add('hidden');
                         setTimeout(() => globalLoader.style.display = 'none', 400);
@@ -268,7 +263,6 @@ async function loadFromFirebase() {
                     if (needsWhiteboardRender) renderWhiteboard();
                 }
 
-                // Quando terminar todo o ciclo de renderização, oculta o loader!
                 if (globalLoader && !globalLoader.classList.contains('hidden')) {
                     globalLoader.classList.add('hidden');
                     setTimeout(() => globalLoader.style.display = 'none', 400);
@@ -291,7 +285,7 @@ function loadBoardData(boardId) {
 
     tasks = bData.tasks || [];
     columns = bData.columns || [{ id: 'todo', title: 'Pendências' }, { id: 'done', title: 'Concluído' }];
-    stickyNotes = bData.whiteboard || []; // Carrega o Whiteboard específico deste quadro
+    stickyNotes = bData.whiteboard || [];
 
     tasks.forEach(t => {
         if (!t.assignees) {
@@ -311,7 +305,7 @@ function loadBoardData(boardId) {
     renderBoardsList();
     updateTagsDropdown();
     render();
-    renderWhiteboard(); // Desenha os post-its do quadro atual
+    renderWhiteboard();
 }
 
 function syncToFirebase() {
@@ -334,7 +328,7 @@ function syncToFirebase() {
             title: boardTitle,
             tasks_string: JSON.stringify(tasks),
             columns_string: JSON.stringify(columns),
-            whiteboard_string: JSON.stringify(stickyNotes), // Salva o Whiteboard
+            whiteboard_string: JSON.stringify(stickyNotes),
             tags: tags,
             members: currentBoardMembers,
             owner: allBoardsData[currentBoardId].owner || currentUser.email,
@@ -432,6 +426,7 @@ function render() {
     document.getElementById('calendarMain').style.display = 'none';
     document.getElementById('ganttMain').style.display = 'none';
     document.getElementById('whiteboardMain').style.display = 'none';
+    if (document.getElementById('mixerMain')) document.getElementById('mixerMain').style.display = 'none';
 
     const board = document.getElementById('boardMain');
     board.innerHTML = '';
@@ -717,7 +712,6 @@ async function saveTaskBtnClick() {
         newTaskData.status = currentTargetColumn || (columns.length > 0 ? columns[0].id : 'todo');
         newTaskData.history = [{ date: new Date().toISOString(), user: currentUser.email, action: 'Criou a tarefa' }];
 
-        // CORREÇÃO AQUI: unshift() em vez de push() coloca o card novo no TOPO da coluna
         tasks.unshift(newTaskData);
     }
 
@@ -892,12 +886,23 @@ function switchMainView(viewId) {
     document.getElementById('calendarMain').style.display = 'none';
     document.getElementById('ganttMain').style.display = 'none';
     document.getElementById('whiteboardMain').style.display = 'none';
+    if (document.getElementById('mixerMain')) document.getElementById('mixerMain').style.display = 'none';
 
     // Remove classe ativa dos botões
     document.getElementById('btnViewBoard').classList.remove('active-view');
     document.getElementById('btnViewCal').classList.remove('active-view');
     document.getElementById('btnViewGantt').classList.remove('active-view');
     document.getElementById('btnViewWhiteboard').classList.remove('active-view');
+
+    // Tenta remover a classe do botão do mixer no sidebar se ele pudesse ter
+    const btnMixer = document.getElementById('btnViewMixer');
+    if (btnMixer) {
+        if (viewId === 'mixer') {
+            btnMixer.style.opacity = '0.7';
+        } else {
+            btnMixer.style.opacity = '1';
+        }
+    }
 
     // Mostra o selecionado
     if (viewId === 'board') {
@@ -919,6 +924,14 @@ function switchMainView(viewId) {
         document.getElementById('whiteboardMain').style.display = 'block';
         document.getElementById('btnViewWhiteboard').classList.add('active-view');
         document.getElementById('btnAddColBtn').style.display = 'none';
+    } else if (viewId === 'mixer') {
+        document.getElementById('mixerMain').style.display = 'block';
+        document.getElementById('btnAddColBtn').style.display = 'none';
+        renderMixer(); // Chama renderização do YGaming
+
+        if (window.innerWidth <= 850) {
+            toggleMenu();
+        }
     }
 }
 
@@ -1267,17 +1280,15 @@ function changeGanttZoom(mode) {
 let draggedStickyId = null;
 let offset = [0, 0];
 
-// NOVA VARIÁVEL GLOBAL PARA O ZOOM DO WHITEBOARD
 function zoomWhiteboard(delta) {
     currentZoom += delta;
-    if (currentZoom < 0.3) currentZoom = 0.3; // Zoom mínimo
-    if (currentZoom > 3) currentZoom = 3;     // Zoom máximo
+    if (currentZoom < 0.3) currentZoom = 0.3;
+    if (currentZoom > 3) currentZoom = 3;
 
     document.getElementById('whiteboardCanvas').style.transform = `scale(${currentZoom})`;
     document.getElementById('zoomDisplay').innerText = Math.round(currentZoom * 100) + '%';
 }
 
-// NOVA FUNÇÃO PARA MUDAR A COR DO POST-IT
 function changeStickyColor(id, color) {
     const note = stickyNotes.find(n => n.id === id);
     if (note) {
@@ -1291,7 +1302,7 @@ function renderWhiteboard() {
     const canvas = document.getElementById('whiteboardCanvas');
     canvas.innerHTML = '';
 
-    const palette = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa']; // Amarelo, Verde, Azul, Rosa, Laranja
+    const palette = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
 
     stickyNotes.forEach(note => {
         const sticky = document.createElement('div');
@@ -1302,7 +1313,6 @@ function renderWhiteboard() {
         sticky.style.top = note.top;
         sticky.style.background = note.color;
 
-        // INJEÇÃO DA PALETA DE CORES DENTRO DO HEADER DO POST-IT
         let colorsHtml = palette.map(c =>
             `<div class="color-dot" style="background: ${c}" onclick="changeStickyColor('${note.id}', '${c}')"></div>`
         ).join('');
@@ -1318,10 +1328,7 @@ function renderWhiteboard() {
         sticky.addEventListener('dragstart', (e) => {
             draggedStickyId = note.id;
             const rect = sticky.getBoundingClientRect();
-
-            // O cálculo do offset agora considera a escala atual do zoom!
             offset = [(e.clientX - rect.left) / currentZoom, (e.clientY - rect.top) / currentZoom];
-
             e.dataTransfer.effectAllowed = "move";
             e.stopPropagation();
         });
@@ -1337,7 +1344,6 @@ function addStickyNote() {
 
     const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
 
-    // O novo post-it nasce exatamente onde o usuário está olhando, corrigido pelo Zoom
     const newNote = {
         id: 'sticky-' + Date.now(),
         text: '',
@@ -1372,7 +1378,6 @@ function dropSticky(e) {
     if (draggedStickyId) {
         const canvasRect = document.getElementById('whiteboardCanvas').getBoundingClientRect();
 
-        // Cálculo exato da nova posição considerando o Zoom atual
         let x = (e.clientX - canvasRect.left) / currentZoom - offset[0];
         let y = (e.clientY - canvasRect.top) / currentZoom - offset[1];
 
@@ -1432,3 +1437,162 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('paste', handlePaste);
     switchMainView('board');
 });
+
+
+// ============================================
+// MIXER YGAMING (OPERAÇÃO)
+// ============================================
+
+const mixerInitialData = [
+    { name: "Marketing, Vendas & Influencers", tasks: ["Definir campanha de lançamento", "Preparar calendário de conteúdo", "Selecionar influenciadores", "Criar material comercial"] },
+    { name: "Games Developers & Design", tasks: ["Finalizar interface principal", "Revisar sprites dos heróis", "Criar efeitos das habilidades", "Validar experiência da partida"] },
+    { name: "Desenvolvedores", tasks: ["Concluir sistema de combate", "Implementar progressão", "Corrigir bugs prioritários", "Preparar versão de testes"] },
+    { name: "Suporte", tasks: ["Criar base de respostas", "Definir processo de atendimento", "Preparar formulário de bugs", "Organizar testes com jogadores"] }
+];
+
+let mixerData = JSON.parse(localStorage.getItem("ygamingMixer")) || mixerInitialData.map(area => ({
+    ...area,
+    tasks: area.tasks.map(name => ({ name, done: false })),
+    manual: null
+}));
+
+function saveMixer() {
+    localStorage.setItem("ygamingMixer", JSON.stringify(mixerData));
+}
+
+function getMixerTaskProgress(area) {
+    if (area.manual !== null) return area.manual;
+    if (!area.tasks.length) return 0;
+    return Math.round(area.tasks.filter(t => t.done).length / area.tasks.length * 100);
+}
+
+function getMixerStatus(value, average) {
+    const difference = value - average;
+    if (difference < -12) return ["Precisa avançar", "behind"];
+    if (difference > 18) return ["Muito à frente", "ahead"];
+    return ["Ritmo equilibrado", "balanced"];
+}
+
+function escapeMixerHtml(text) {
+    return text.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+}
+
+function renderMixer() {
+    const grid = document.getElementById("mixerGrid");
+    if (!grid) return;
+
+    const progresses = mixerData.map(getMixerTaskProgress);
+    const average = progresses.length > 0 ? Math.round(progresses.reduce((a, b) => a + b, 0) / progresses.length) : 0;
+
+    grid.innerHTML = "";
+
+    mixerData.forEach((area, index) => {
+        const progress = progresses[index];
+        const completed = area.tasks.filter(t => t.done).length;
+        const [statusText, statusClass] = getMixerStatus(progress, average);
+
+        const channel = document.createElement("section");
+        channel.className = "mixer-channel";
+        channel.innerHTML = `
+            <div class="mixer-channel-header">
+                <h2 class="mixer-channel-title">${escapeMixerHtml(area.name)}</h2>
+                <span class="mixer-status ${statusClass}">${statusText}</span>
+            </div>
+
+            <div class="mixer-console">
+                <div class="mixer-fader-wrap">
+                    <div class="mixer-scale">
+                        <span>100</span><span>75</span><span>50</span><span>25</span><span>0</span>
+                    </div>
+                    <div class="mixer-rail"></div>
+                    <input class="mixer-fader" type="range" min="0" max="100" value="${progress}" aria-label="Progresso">
+                </div>
+                <div class="mixer-progress-info">
+                    <div class="mixer-percent">${progress}%</div>
+                    <div class="mixer-counter">${completed} de ${area.tasks.length} tarefas concluídas</div>
+                    <div class="mixer-controls">
+                        <button class="mixer-control-btn minus" title="Diminuir 5%">−</button>
+                        <button class="mixer-control-btn plus" title="Aumentar 5%">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mixer-tasks">
+                <div class="mixer-tasks-title">
+                    <span>Tarefas da área</span>
+                    <span>${completed}/${area.tasks.length}</span>
+                </div>
+                <div class="mixer-task-list">
+                    ${area.tasks.map((task, taskIndex) => `
+                        <div class="mixer-task-item ${task.done ? "done" : ""}">
+                            <button class="mixer-check" data-task="${taskIndex}">${task.done ? "✓" : ""}</button>
+                            <span class="mixer-task-name">${escapeMixerHtml(task.name)}</span>
+                            <button class="mixer-remove" data-remove="${taskIndex}" title="Excluir tarefa">×</button>
+                        </div>
+                    `).join("")}
+                </div>
+                <form class="mixer-add-form">
+                    <input placeholder="Adicionar nova tarefa..." maxlength="70">
+                    <button class="mixer-add" title="Adicionar">+</button>
+                </form>
+            </div>
+
+            <div class="mixer-footer">
+                <span>${area.manual !== null ? "Ajuste manual ativo" : "Avanço automático"}</span>
+                <button class="mixer-reset" ${area.manual === null ? 'style="opacity: 0.5; cursor: default;"' : ''}>Recalcular</button>
+            </div>
+        `;
+
+        channel.querySelector(".mixer-fader").addEventListener("input", e => {
+            area.manual = Number(e.target.value);
+            saveMixer(); renderMixer();
+        });
+
+        channel.querySelector(".minus").onclick = () => {
+            area.manual = Math.max(0, progress - 5); saveMixer(); renderMixer();
+        };
+
+        channel.querySelector(".plus").onclick = () => {
+            area.manual = Math.min(100, progress + 5); saveMixer(); renderMixer();
+        };
+
+        channel.querySelectorAll("[data-task]").forEach(button => {
+            button.onclick = () => {
+                const task = area.tasks[Number(button.dataset.task)];
+                task.done = !task.done;
+                area.manual = null;
+                saveMixer(); renderMixer();
+            };
+        });
+
+        channel.querySelectorAll("[data-remove]").forEach(button => {
+            button.onclick = () => {
+                area.tasks.splice(Number(button.dataset.remove), 1);
+                area.manual = null;
+                saveMixer(); renderMixer();
+            };
+        });
+
+        channel.querySelector(".mixer-add-form").onsubmit = e => {
+            e.preventDefault();
+            const input = e.currentTarget.querySelector("input");
+            const name = input.value.trim();
+            if (!name) return;
+            area.tasks.push({ name, done: false });
+            area.manual = null;
+            saveMixer(); renderMixer();
+        };
+
+        channel.querySelector(".mixer-reset").onclick = () => {
+            if (area.manual !== null) {
+                area.manual = null;
+                saveMixer(); renderMixer();
+            }
+        };
+
+        grid.appendChild(channel);
+    });
+
+    document.getElementById("generalPercent").textContent = average + "%";
+    document.getElementById("generalFill").style.width = average + "%";
+}
