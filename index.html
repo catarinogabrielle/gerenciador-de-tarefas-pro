@@ -203,7 +203,7 @@
             background: var(--bg-card);
         }
 
-        /* --- NOVO MENU DROPDOWN (3 PONTOS) --- */
+        /* --- MENU DROPDOWN (3 PONTOS) --- */
         .header-dropdown {
             position: relative;
             display: inline-block;
@@ -3185,7 +3185,9 @@
                 const container = columnEl.querySelector('.tasks-container');
 
                 filteredTasks.filter(t => t.status === col.id).forEach(t => {
-                    const isDoneCol = col.id === 'done' || col.title.toLowerCase().includes('conclu');
+                    // CORREÇÃO: "Done" = Sempre a última coluna cadastrada
+                    const isDoneCol = columns.length > 0 && col.id === columns[columns.length - 1].id;
+
                     const card = document.createElement('div');
                     card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
 
@@ -3269,7 +3271,9 @@
                             }
 
                             task.status = newStatus;
-                            const isDoneTarget = targetCol?.title.toLowerCase().includes('conclu');
+
+                            // CORREÇÃO: Confetes são disparados se soltar na ÚLTIMA coluna do quadro
+                            const isDoneTarget = targetCol && columns.length > 0 && targetCol.id === columns[columns.length - 1].id;
                             if (isDoneTarget) {
                                 task.endDate = getTodayString();
                                 fireConfetti();
@@ -3740,8 +3744,12 @@
 
         function renderCharts() {
             const today = getTodayString();
-            const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
-            const stats = { total: tasks.length, done: tasks.filter(t => t.status === (doneCol?.id || 'done')).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== (doneCol?.id || 'done')).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
+
+            // CORREÇÃO: Pegar a última coluna corretamente nos gráficos
+            const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
+            const doneColId = doneColObj ? doneColObj.id : 'done';
+
+            const stats = { total: tasks.length, done: tasks.filter(t => t.status === doneColId).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== doneColId).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
             const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0);
 
             const assigneeData = {};
@@ -3757,7 +3765,7 @@
                 assigns.forEach(assign => {
                     if (!assigneeData[assign]) assigneeData[assign] = { total: 0, done: 0 };
                     assigneeData[assign].total++;
-                    if (t.status === (doneCol?.id || 'done')) assigneeData[assign].done++;
+                    if (t.status === doneColId) assigneeData[assign].done++;
                 });
             });
 
@@ -3830,10 +3838,12 @@
                 let el = document.getElementById(`count-${c.id}`);
                 if (el) el.innerText = tl.filter(t => t.status === c.id).length;
             });
-            const doneCol = columns.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
+
+            // CORREÇÃO: "Done" é sempre a última coluna para atualizar progresso inferior
+            const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
             let pct = 0;
-            if (tl.length > 0) {
-                const doneCount = doneCol ? tl.filter(t => t.status === doneCol.id).length : 0;
+            if (tl.length > 0 && doneColObj) {
+                const doneCount = tl.filter(t => t.status === doneColObj.id).length;
                 pct = Math.round((doneCount / tl.length) * 100);
             }
             document.getElementById('prog-fill').style.width = pct + '%';
@@ -3931,8 +3941,11 @@
 
                 let safeEndStr = endD.toISOString().split('T')[0];
 
+                // CORREÇÃO: "Done" é sempre a última coluna para o Cronograma
+                const doneColId = columns.length > 0 ? columns[columns.length - 1].id : 'done';
                 let progress = 0;
-                if (t.status === 'done' || (columns.find(c => c.id === t.status)?.title || '').toLowerCase().includes('conclu')) {
+
+                if (t.status === doneColId) {
                     progress = 100;
                 } else if (t.subtasks && t.subtasks.length > 0) {
                     let p = Math.round((t.subtasks.filter(s => s.done).length / t.subtasks.length) * 100);
@@ -4197,11 +4210,8 @@
                 const bTasks = bData.tasks || [];
                 const bCols = bData.columns || [];
 
-                let doneColId = 'done';
-                const doneColObj = bCols.find(c => c.id === 'done' || c.title.toLowerCase().includes('conclu'));
-                if (doneColObj) doneColId = doneColObj.id;
-                else if (bCols.length > 0) doneColId = bCols[bCols.length - 1].id;
-
+                // CORREÇÃO: "Done" é sempre a última coluna para o portfólio
+                const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
                 const todoColId = bCols.length > 0 ? bCols[0].id : 'todo';
 
                 let boardDoneTasks = 0;
@@ -4311,8 +4321,10 @@
                 bTasks[taskIndex].status = newStatusId;
 
                 const bCols = allBoardsData[boardId].columns || [];
-                const targetCol = bCols.find(c => c.id === newStatusId);
-                if (targetCol && (targetCol.id === 'done' || targetCol.title.toLowerCase().includes('conclu'))) {
+                const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
+
+                // CORREÇÃO: Disparar confetes e setar data ao finalizar
+                if (newStatusId === doneColId) {
                     bTasks[taskIndex].endDate = getTodayString();
                     fireConfetti();
                 }
