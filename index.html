@@ -411,6 +411,7 @@
             color: var(--accent);
         }
 
+        /* --- AUTENTICAÇÃO E LOGIN --- */
         .login-overlay {
             position: fixed;
             inset: 0;
@@ -429,6 +430,29 @@
             max-width: 400px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+        }
+
+        .auth-link {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .auth-link:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .auth-error {
+            color: #ef4444;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+            font-weight: 600;
         }
 
         .overlay {
@@ -2232,12 +2256,12 @@
     </div>
 
     <div class="login-overlay" id="loginOverlay">
-        <div class="login-box">
+
+        <div class="login-box" id="boxLogin">
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; color: var(--text-main);">HUD (Heads-Up Display)</h2>
                 <span style="font-size: 0.8rem; color: var(--accent); font-weight: 700;">Acesso Restrito</span>
             </div>
-
             <div class="form-group">
                 <label>E-mail</label>
                 <input type="email" id="loginEmail" class="input-main" placeholder="seu@email.com">
@@ -2246,14 +2270,58 @@
                 <label>Senha</label>
                 <input type="password" id="loginPassword" class="input-main" placeholder="••••••••">
             </div>
-
             <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="loginFirebase()">Entrar</button>
-            <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="registerFirebase()">Criar
-                Conta</button>
-            <div id="loginError"
-                style="color: #ef4444; font-size: 0.8rem; margin-top: 10px; text-align: center; display: none;">Erro ao
-                fazer login.</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <span class="auth-link" onclick="switchAuthView('recover')">Esqueci a senha</span>
+                <span class="auth-link" onclick="switchAuthView('register')">Criar nova conta</span>
+            </div>
+            <div id="loginError" class="auth-error"></div>
         </div>
+
+        <div class="login-box" id="boxRegister" style="display: none;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-main);">Criar Conta</h2>
+                <span style="font-size: 0.8rem; color: var(--text-sub); font-weight: 600;">Junte-se ao HUD</span>
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="regEmail" class="input-main" placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="regPassword" class="input-main" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label>Confirmar Senha</label>
+                <input type="password" id="regPasswordConfirm" class="input-main" placeholder="••••••••">
+            </div>
+            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="registerFirebase()">Criar
+                Conta</button>
+            <span class="auth-link" style="display: block; text-align: center; margin-top: 15px;"
+                onclick="switchAuthView('login')">⬅ Voltar para o Login</span>
+            <div id="regError" class="auth-error"></div>
+        </div>
+
+        <div class="login-box" id="boxRecover" style="display: none;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--text-main);">Recuperar Senha</h2>
+                <span style="font-size: 0.8rem; color: var(--text-sub); font-weight: 600;">Enviaremos um link seguro
+                    para alteração</span>
+            </div>
+            <div class="form-group">
+                <label>E-mail cadastrado</label>
+                <input type="email" id="recEmail" class="input-main" placeholder="seu@email.com">
+            </div>
+            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="recoverFirebase()">Enviar
+                Link</button>
+            <span class="auth-link" style="display: block; text-align: center; margin-top: 15px;"
+                onclick="switchAuthView('login')">⬅ Voltar para o Login</span>
+            <div id="recError" class="auth-error"></div>
+            <div id="recSuccess"
+                style="color: #10b981; font-size: 0.85rem; margin-top: 10px; text-align: center; display: none; font-weight: 600;">
+                Link enviado! Verifique sua caixa de entrada.</div>
+        </div>
+
     </div>
 
     <div class="overlay" id="overlay"></div>
@@ -2659,7 +2727,7 @@
             </div>
             <div class="port-summary">
                 <div class="port-summary-row">
-                    <span>Média Global</span>
+                    <span>Média Global (Calculada)</span>
                     <span id="portGeneralPercent">0%</span>
                 </div>
                 <div class="port-progress-bg">
@@ -2743,6 +2811,26 @@
         });
 
         // ============================================
+        // LOGICA DE AUTENTICAÇÃO (LOGIN/REGISTRO/RECUPERAÇÃO)
+        // ============================================
+        function switchAuthView(view) {
+            document.getElementById('boxLogin').style.display = 'none';
+            document.getElementById('boxRegister').style.display = 'none';
+            document.getElementById('boxRecover').style.display = 'none';
+
+            document.querySelectorAll('.auth-error').forEach(e => e.style.display = 'none');
+            document.getElementById('recSuccess').style.display = 'none';
+
+            if (view === 'login') {
+                document.getElementById('boxLogin').style.display = 'block';
+            } else if (view === 'register') {
+                document.getElementById('boxRegister').style.display = 'block';
+            } else if (view === 'recover') {
+                document.getElementById('boxRecover').style.display = 'block';
+            }
+        }
+
+        // ============================================
         // CONFIGURAÇÃO DO FIREBASE
         // ============================================
         const firebaseConfig = {
@@ -2777,6 +2865,7 @@
             } else {
                 currentUser = null;
                 loginScreen.style.display = 'flex';
+                switchAuthView('login');
                 if (dbListenerUnsubscribe) dbListenerUnsubscribe();
 
                 if (globalLoader) {
@@ -2801,10 +2890,22 @@
         }
 
         async function registerFirebase() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPassword').value;
-            const errObj = document.getElementById('loginError');
-            if (!email || !pass) { errObj.innerText = "Preencha e-mail e senha."; errObj.style.display = 'block'; return; }
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPassword').value;
+            const passConfirm = document.getElementById('regPasswordConfirm').value;
+            const errObj = document.getElementById('regError');
+
+            if (!email || !pass || !passConfirm) {
+                errObj.innerText = "Preencha todos os campos.";
+                errObj.style.display = 'block';
+                return;
+            }
+            if (pass !== passConfirm) {
+                errObj.innerText = "As senhas não coincidem.";
+                errObj.style.display = 'block';
+                return;
+            }
+
             try {
                 await auth.createUserWithEmailAndPassword(email, pass);
                 errObj.style.display = 'none';
@@ -2812,6 +2913,29 @@
             } catch (error) {
                 errObj.innerText = "Erro: " + error.message;
                 errObj.style.display = 'block';
+            }
+        }
+
+        async function recoverFirebase() {
+            const email = document.getElementById('recEmail').value;
+            const errObj = document.getElementById('recError');
+            const sucObj = document.getElementById('recSuccess');
+
+            if (!email) {
+                errObj.innerText = "Preencha seu e-mail.";
+                errObj.style.display = 'block';
+                sucObj.style.display = 'none';
+                return;
+            }
+
+            try {
+                await auth.sendPasswordResetEmail(email);
+                errObj.style.display = 'none';
+                sucObj.style.display = 'block';
+            } catch (error) {
+                errObj.innerText = "Erro: " + error.message;
+                errObj.style.display = 'block';
+                sucObj.style.display = 'none';
             }
         }
 
@@ -3050,7 +3174,6 @@
                         console.error("Erro Firebase:", err);
                         isSavingLocally = false;
                         syncTimeout = null;
-                        showSysAlert("⚠️ Ocorreu um erro ao sincronizar com a nuvem. Verifique o console.");
                     });
             }, 600);
         }
@@ -3861,7 +3984,7 @@
         }
 
         function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
-        function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
+        function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=200&auto=format&fit=crop')"); }
         function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); applyBackground(currentBg); if (document.getElementById('statsOverlay').classList.contains('active')) renderCharts(); }
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
 
