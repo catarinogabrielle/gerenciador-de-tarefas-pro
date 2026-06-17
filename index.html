@@ -1785,7 +1785,24 @@
             overflow: hidden;
             box-shadow: var(--shadow-sm);
             max-height: 600px;
-            transition: border-color 0.3s ease;
+            transition: border-color 0.3s ease, opacity 0.3s ease;
+        }
+
+        .port-card.excluded {
+            border-color: var(--border) !important;
+        }
+
+        .port-card.excluded .port-card-header {
+            background: var(--bg-body);
+        }
+
+        .port-card.excluded .port-progress-fill {
+            background: var(--text-sub) !important;
+            opacity: 0.5;
+        }
+
+        .port-card.excluded .port-stats span {
+            color: var(--text-sub) !important;
         }
 
         .port-card-header {
@@ -1974,6 +1991,53 @@
             border: 1px solid rgba(113, 113, 122, 0.3);
         }
 
+        /* --- CSS DO TOGGLE --- */
+        .toggle-calc {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: var(--text-sub);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-calc.active {
+            color: var(--accent);
+        }
+
+        .toggle-switch {
+            width: 32px;
+            height: 18px;
+            background: var(--border);
+            border-radius: 12px;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-calc.active .toggle-switch {
+            background: var(--done-border);
+        }
+
+        .toggle-calc.active .toggle-switch::after {
+            left: 16px;
+        }
+
         @media (max-width: 850px) {
             header {
                 padding: 15px;
@@ -2138,6 +2202,10 @@
                 flex: 1;
                 font-size: 0.8rem;
                 padding: 0 10px;
+            }
+
+            .mobile-hide {
+                display: none !important;
             }
         }
 
@@ -2587,7 +2655,7 @@
                 <h2 style="margin:0; font-size: 24px; font-weight:800; color: var(--text-main);">Termômetro de Projetos
                 </h2>
                 <p style="margin:5px 0 0; color:var(--text-sub); font-weight: 600;">Progresso e ritmo de todos os
-                    quadros (Verde, Amarelo, Vermelho)</p>
+                    quadros</p>
             </div>
             <div class="port-summary">
                 <div class="port-summary-row">
@@ -2637,7 +2705,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <script>
         // ============================================
-        // FUNÇÕES UTILITÁRIAS GLOBAIS (NÃO REMOVER)
+        // FUNÇÕES UTILITÁRIAS GLOBAIS
         // ============================================
         function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 
@@ -2673,7 +2741,6 @@
                 menu.classList.remove('active');
             }
         });
-
 
         // ============================================
         // CONFIGURAÇÃO DO FIREBASE
@@ -2796,55 +2863,6 @@
 
         let modalSelectedAssignees = [];
 
-        function showSysModal(title, message, type = 'alert', placeholder = '') {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('sysOverlay');
-                const titleEl = document.getElementById('sysTitle');
-                const msgEl = document.getElementById('sysMessage');
-                const inputEl = document.getElementById('sysInput');
-                const btnConfirm = document.getElementById('sysBtnConfirm');
-                const btnCancel = document.getElementById('sysBtnCancel');
-
-                titleEl.innerText = title;
-                msgEl.innerText = message;
-                inputEl.value = '';
-
-                inputEl.style.display = type === 'prompt' ? 'block' : 'none';
-                inputEl.placeholder = placeholder;
-
-                btnCancel.style.display = 'flex';
-                btnCancel.innerText = type === 'alert' ? 'Fechar' : 'Cancelar';
-
-                btnConfirm.style.display = type === 'alert' ? 'none' : 'flex';
-                btnConfirm.innerText = 'OK';
-                btnConfirm.className = 'btn-primary';
-
-                if (title.toLowerCase().includes('excluir') || title.toLowerCase().includes('limpar')) {
-                    btnConfirm.style.background = '#ef4444';
-                    btnConfirm.style.borderColor = '#ef4444';
-                } else {
-                    btnConfirm.style.background = '';
-                    btnConfirm.style.borderColor = '';
-                }
-
-                overlay.classList.add('active');
-                if (type === 'prompt') setTimeout(() => inputEl.focus(), 100);
-
-                const close = (value) => {
-                    overlay.classList.remove('active');
-                    resolve(value);
-                };
-
-                btnConfirm.onclick = () => close(type === 'prompt' ? inputEl.value : true);
-                btnCancel.onclick = () => close(type === 'prompt' ? null : false);
-                inputEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnConfirm.click(); } };
-            });
-        }
-
-        async function showSysAlert(message) { return await showSysModal('Aviso', message, 'alert'); }
-        async function showSysConfirm(message, title = 'Confirmação') { return await showSysModal(title, message, 'confirm'); }
-        async function showSysPrompt(title, placeholder = '') { return await showSysModal(title, '', 'prompt', placeholder); }
-
         async function loadFromFirebase() {
             if (!currentUser) return;
             try {
@@ -2882,7 +2900,8 @@
                                 whiteboard: data.whiteboard_string ? JSON.parse(data.whiteboard_string) : [],
                                 members: data.members || [currentUser.email],
                                 tags: parsedTags,
-                                owner: data.owner
+                                owner: data.owner,
+                                excludeFromPortfolio: data.excludeFromPortfolio || false
                             };
                         });
 
@@ -3031,6 +3050,7 @@
                         console.error("Erro Firebase:", err);
                         isSavingLocally = false;
                         syncTimeout = null;
+                        showSysAlert("⚠️ Ocorreu um erro ao sincronizar com a nuvem. Verifique o console.");
                     });
             }, 600);
         }
@@ -3048,6 +3068,20 @@
             if (bId === currentBoardId) {
                 tasks = bData.tasks;
             }
+        }
+
+        function toggleBoardPortfolioStatus(bId) {
+            if (!currentUser || !allBoardsData[bId]) return;
+
+            const currentState = allBoardsData[bId].excludeFromPortfolio || false;
+            allBoardsData[bId].excludeFromPortfolio = !currentState;
+
+            db.collection('boards').doc(bId).set({
+                excludeFromPortfolio: !currentState,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(err => console.error(err));
+
+            renderPortfolio();
         }
 
         function openTemplateModal() { document.getElementById('templateOverlay').classList.add('active'); }
@@ -3074,7 +3108,8 @@
             const newBoardData = {
                 title: title, owner: currentUser.email, members: [currentUser.email],
                 tasks_string: "[]", columns_string: JSON.stringify(initCols),
-                whiteboard_string: "[]", tags: [...defaultTags]
+                whiteboard_string: "[]", tags: [...defaultTags],
+                excludeFromPortfolio: false
             };
 
             currentBoardId = newId;
@@ -3185,7 +3220,6 @@
                 const container = columnEl.querySelector('.tasks-container');
 
                 filteredTasks.filter(t => t.status === col.id).forEach(t => {
-                    // CORREÇÃO: "Done" = Sempre a última coluna cadastrada
                     const isDoneCol = columns.length > 0 && col.id === columns[columns.length - 1].id;
 
                     const card = document.createElement('div');
@@ -3272,7 +3306,6 @@
 
                             task.status = newStatus;
 
-                            // CORREÇÃO: Confetes são disparados se soltar na ÚLTIMA coluna do quadro
                             const isDoneTarget = targetCol && columns.length > 0 && targetCol.id === columns[columns.length - 1].id;
                             if (isDoneTarget) {
                                 task.endDate = getTodayString();
@@ -3745,7 +3778,6 @@
         function renderCharts() {
             const today = getTodayString();
 
-            // CORREÇÃO: Pegar a última coluna corretamente nos gráficos
             const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
             const doneColId = doneColObj ? doneColObj.id : 'done';
 
@@ -3839,7 +3871,6 @@
                 if (el) el.innerText = tl.filter(t => t.status === c.id).length;
             });
 
-            // CORREÇÃO: "Done" é sempre a última coluna para atualizar progresso inferior
             const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
             let pct = 0;
             if (tl.length > 0 && doneColObj) {
@@ -3941,7 +3972,6 @@
 
                 let safeEndStr = endD.toISOString().split('T')[0];
 
-                // CORREÇÃO: "Done" é sempre a última coluna para o Cronograma
                 const doneColId = columns.length > 0 ? columns[columns.length - 1].id : 'done';
                 let progress = 0;
 
@@ -4190,6 +4220,20 @@
         // VISÃO GLOBAL DE PORTFÓLIO (TERMÔMETRO REAL)
         // ============================================
 
+        function toggleBoardPortfolioStatus(bId) {
+            if (!currentUser || !allBoardsData[bId]) return;
+
+            const currentState = allBoardsData[bId].excludeFromPortfolio || false;
+            allBoardsData[bId].excludeFromPortfolio = !currentState;
+
+            db.collection('boards').doc(bId).set({
+                excludeFromPortfolio: !currentState,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(err => console.error(err));
+
+            renderPortfolio();
+        }
+
         function renderPortfolio() {
             const grid = document.getElementById('portfolioGrid');
             if (!grid) return;
@@ -4209,8 +4253,8 @@
                 const bData = allBoardsData[bId];
                 const bTasks = bData.tasks || [];
                 const bCols = bData.columns || [];
+                const isExcluded = bData.excludeFromPortfolio || false;
 
-                // CORREÇÃO: "Done" é sempre a última coluna para o portfólio
                 const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
                 const todoColId = bCols.length > 0 ? bCols[0].id : 'todo';
 
@@ -4219,8 +4263,10 @@
                     if (t.status === doneColId) boardDoneTasks++;
                 });
 
-                totalGlobalTasks += bTasks.length;
-                totalGlobalDone += boardDoneTasks;
+                if (!isExcluded) {
+                    totalGlobalTasks += bTasks.length;
+                    totalGlobalDone += boardDoneTasks;
+                }
 
                 boardsAnalysis.push({
                     bId,
@@ -4230,7 +4276,8 @@
                     doneColId,
                     todoColId,
                     boardDoneTasks,
-                    pct: bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0
+                    pct: bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0,
+                    isExcluded
                 });
             });
 
@@ -4238,14 +4285,22 @@
 
             grid.innerHTML = "";
 
-            boardsAnalysis.sort((a, b) => b.pct - a.pct).forEach(board => {
+            boardsAnalysis.sort((a, b) => {
+                if (a.isExcluded && !b.isExcluded) return 1;
+                if (!a.isExcluded && b.isExcluded) return -1;
+                return b.pct - a.pct;
+            }).forEach(board => {
 
                 const diff = board.pct - globalPct;
                 let thermoClass = 'yellow';
                 let thermoText = '🟡 No Ritmo';
                 let thermoColor = '#f59e0b';
 
-                if (board.bTasks.length === 0) {
+                if (board.isExcluded) {
+                    thermoClass = 'gray';
+                    thermoText = '⏸️ Ignorado';
+                    thermoColor = 'var(--text-sub)';
+                } else if (board.bTasks.length === 0) {
                     thermoClass = 'gray';
                     thermoText = '⚪ Vazio';
                     thermoColor = 'var(--text-sub)';
@@ -4278,15 +4333,23 @@
                 }).join('');
 
                 const card = document.createElement("div");
-                card.className = "port-card";
-                card.style.borderColor = `color-mix(in srgb, ${thermoColor} 50%, var(--border))`;
+                card.className = `port-card ${board.isExcluded ? 'excluded' : ''}`;
+                card.style.borderColor = board.isExcluded ? 'var(--border)' : `color-mix(in srgb, ${thermoColor} 50%, var(--border))`;
 
                 card.innerHTML = `
             <div class="port-card-header">
-                <h3 class="port-card-title">
-                    <span style="cursor:pointer;" onclick="switchBoard('${board.bId}')" title="Abrir quadro">${escapeHtml(board.bTitle)} ↗</span>
-                    <span class="thermo-badge ${thermoClass}">${thermoText}</span>
-                </h3>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
+                    <h3 class="port-card-title" style="margin:0;">
+                        <span style="cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="switchBoard('${board.bId}')" title="Abrir quadro">
+                            ${escapeHtml(board.bTitle)} ↗
+                            <span class="thermo-badge ${thermoClass}">${thermoText}</span>
+                        </span>
+                    </h3>
+                    <div class="toggle-calc ${!board.isExcluded ? 'active' : ''}" onclick="toggleBoardPortfolioStatus('${board.bId}')" title="${board.isExcluded ? 'Incluir no cálculo global' : 'Ignorar quadro no cálculo'}">
+                        <span class="mobile-hide">Cálculo</span>
+                        <div class="toggle-switch"></div>
+                    </div>
+                </div>
                 <div class="port-progress-bg">
                     <div class="port-progress-fill" style="width: ${board.pct}%; background: ${thermoColor};"></div>
                 </div>
@@ -4299,8 +4362,8 @@
                 ${tasksHtml || '<span style="font-size:12px; color:var(--text-sub);">Nenhuma tarefa neste quadro.</span>'}
             </div>
             <form class="port-add-form" onsubmit="addPortfolioTask(event, '${board.bId}', '${board.todoColId}')">
-                <input class="port-input" placeholder="Adicionar tarefa rápida..." required maxlength="80">
-                <button class="port-btn-add" type="submit">+</button>
+                <input class="port-input" placeholder="Adicionar tarefa rápida..." required maxlength="80" ${board.isExcluded ? 'disabled' : ''}>
+                <button class="port-btn-add" type="submit" ${board.isExcluded ? 'disabled style="opacity:0.5;"' : ''}>+</button>
             </form>
         `;
 
@@ -4313,6 +4376,7 @@
 
         function togglePortfolioTask(boardId, taskId, newStatusId) {
             if (!allBoardsData[boardId]) return;
+            if (allBoardsData[boardId].excludeFromPortfolio) return;
 
             const bTasks = allBoardsData[boardId].tasks;
             const taskIndex = bTasks.findIndex(t => t.id === taskId);
@@ -4323,7 +4387,6 @@
                 const bCols = allBoardsData[boardId].columns || [];
                 const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
 
-                // CORREÇÃO: Disparar confetes e setar data ao finalizar
                 if (newStatusId === doneColId) {
                     bTasks[taskIndex].endDate = getTodayString();
                     fireConfetti();
