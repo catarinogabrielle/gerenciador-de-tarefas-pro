@@ -2270,7 +2270,8 @@
                 <label>Senha</label>
                 <input type="password" id="loginPassword" class="input-main" placeholder="••••••••">
             </div>
-            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="loginFirebase()">Entrar</button>
+            <button type="button" class="btn-primary" style="width: 100%; margin-top: 10px;"
+                onclick="loginFirebase()">Entrar</button>
             <div style="display: flex; justify-content: space-between; margin-top: 15px;">
                 <span class="auth-link" onclick="switchAuthView('recover')">Esqueci a senha</span>
                 <span class="auth-link" onclick="switchAuthView('register')">Criar nova conta</span>
@@ -2295,8 +2296,8 @@
                 <label>Confirmar Senha</label>
                 <input type="password" id="regPasswordConfirm" class="input-main" placeholder="••••••••">
             </div>
-            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="registerFirebase()">Criar
-                Conta</button>
+            <button type="button" class="btn-primary" style="width: 100%; margin-top: 10px;"
+                onclick="registerFirebase()">Criar Conta</button>
             <span class="auth-link" style="display: block; text-align: center; margin-top: 15px;"
                 onclick="switchAuthView('login')">⬅ Voltar para o Login</span>
             <div id="regError" class="auth-error"></div>
@@ -2312,8 +2313,8 @@
                 <label>E-mail cadastrado</label>
                 <input type="email" id="recEmail" class="input-main" placeholder="seu@email.com">
             </div>
-            <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="recoverFirebase()">Enviar
-                Link</button>
+            <button type="button" class="btn-primary" style="width: 100%; margin-top: 10px;"
+                onclick="recoverFirebase()">Enviar Link</button>
             <span class="auth-link" style="display: block; text-align: center; margin-top: 15px;"
                 onclick="switchAuthView('login')">⬅ Voltar para o Login</span>
             <div id="recError" class="auth-error"></div>
@@ -2340,7 +2341,7 @@
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="modalTaskInput" class="input-main"
                             placeholder="Ex: Criar tela de login..." autofocus>
-                        <button class="btn-mic" onclick="startVoice('modalTaskInput', this)"
+                        <button type="button" class="btn-mic" onclick="startVoice('modalTaskInput', this)"
                             title="Ditar título">🎙️</button>
                     </div>
                 </div>
@@ -2352,7 +2353,7 @@
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
                         <img id="coverPreview" class="cover-preview" style="display: none;"
                             onclick="openImageViewer(event, this.src)" title="Clique para ampliar">
-                        <button id="removeCoverBtn" class="btn-remove-cover" onclick="removeCover(event)"
+                        <button type="button" id="removeCoverBtn" class="btn-remove-cover" onclick="removeCover(event)"
                             style="display: none;" title="Remover imagem">×</button>
                     </div>
                     <input type="file" id="fileCoverInput" accept="image/*" style="display: none;"
@@ -2365,8 +2366,8 @@
                         style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
                         <label style="margin:0;">Descrição (Markdown Ativo ✨)</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button class="btn-mic-small" onclick="startVoice('modalDescriptionInput', this)"
-                                id="descMicBtn">🎙️ Ditar</button>
+                            <button type="button" class="btn-mic-small"
+                                onclick="startVoice('modalDescriptionInput', this)" id="descMicBtn">🎙️ Ditar</button>
                             <div class="tab-buttons-small">
                                 <button type="button" class="tab-btn-small active" onclick="switchDescTab('write')"
                                     id="btnWrite">✏️ Escrever</button>
@@ -2389,7 +2390,7 @@
                             <div class="color-picker-wrapper" title="Alterar cor da tag">
                                 <input type="color" id="newTagColor" onchange="updateCurrentTagColor()">
                             </div>
-                            <button class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
+                            <button type="button" class="btn-secondary" onclick="addNewTag()" title="Criar nova tag"
                                 style="padding: 0 14px; height: 42px; margin:0;">+</button>
                         </div>
                     </div>
@@ -2431,7 +2432,8 @@
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="subtaskInput" class="input-main" placeholder="Adicionar sub-tarefa..."
                             onkeypress="handleSubtaskEnter(event)">
-                        <button class="btn-secondary" onclick="addSubtask()" style="padding: 0 16px;">+</button>
+                        <button type="button" class="btn-secondary" onclick="addSubtask()"
+                            style="padding: 0 16px;">+</button>
                     </div>
                     <div id="subtaskList" class="subtask-list"></div>
                 </div>
@@ -2449,7 +2451,8 @@
                         <input type="text" id="commentInput" class="input-main"
                             placeholder="Comente... (use @ para mencionar)"
                             onkeypress="if(event.key==='Enter') addComment()">
-                        <button class="btn-secondary" onclick="addComment()" style="padding: 0 16px;">➤</button>
+                        <button type="button" class="btn-secondary" onclick="addComment()"
+                            style="padding: 0 16px;">➤</button>
                     </div>
                 </div>
 
@@ -2460,11 +2463,13 @@
             </div>
 
             <div class="modal-footer">
-                <button id="modalDeleteBtn" class="btn-delete-modal" onclick="deleteTaskFromModal()"
+                <button type="button" id="modalDeleteBtn" class="btn-delete-modal" onclick="deleteTaskFromModal()"
                     style="display: none;">🗑️ Excluir Tarefa</button>
                 <div class="modal-actions">
-                    <button class="btn-secondary" onclick="closeModal()" style="height: 42px;">Cancelar</button>
-                    <button class="btn-primary" id="modalSaveBtn" onclick="saveTaskBtnClick()">Salvar Tarefa</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal()"
+                        style="height: 42px;">Cancelar</button>
+                    <button type="button" class="btn-primary" id="modalSaveBtn" onclick="saveTaskBtnClick()">Salvar
+                        Tarefa</button>
                 </div>
             </div>
         </div>
@@ -2475,14 +2480,14 @@
             <h3 style="margin-top:0;">✨ Escolha um Template</h3>
             <p style="color: var(--text-sub); font-size: 0.9rem;">Como você quer iniciar seu novo quadro?</p>
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <button class="template-btn" onclick="applyTemplate('vazio')">📄 Quadro Básico<br>Pendências, Fazendo,
-                    Concluído</button>
-                <button class="template-btn" onclick="applyTemplate('sprint')">💻 Sprint DEV<br>Backlog, Em Dev, Code
-                    Review, Deploy</button>
-                <button class="template-btn" onclick="applyTemplate('evento')">🎯 Projeto / Evento<br>Planejamento,
-                    Pendências, Execução, Finalizado</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('vazio')">📄 Quadro
+                    Básico<br>Pendências, Fazendo, Concluído</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('sprint')">💻 Sprint DEV<br>Backlog,
+                    Em Dev, Code Review, Deploy</button>
+                <button type="button" class="template-btn" onclick="applyTemplate('evento')">🎯 Projeto /
+                    Evento<br>Planejamento, Pendências, Execução, Finalizado</button>
             </div>
-            <button class="btn-secondary" style="width: 100%; margin-top: 20px; height: 42px;"
+            <button type="button" class="btn-secondary" style="width: 100%; margin-top: 20px; height: 42px;"
                 onclick="closeTemplateModal()">Cancelar</button>
         </div>
     </div>
@@ -2492,7 +2497,7 @@
             <div
                 style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid var(--border);">
                 <h3 style="margin:0;">📊 Dashboards de Performance</h3>
-                <button class="btn-secondary" onclick="closeStatsModal()"
+                <button type="button" class="btn-secondary" onclick="closeStatsModal()"
                     style="padding: 6px 12px; height: auto;">Fechar</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px 30px;">
@@ -2533,7 +2538,7 @@
         <div class="modal-box" style="max-width: 450px;">
             <div class="modal-header-fixed" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin:0;">👥 Compartilhar Quadro</h3>
-                <button class="btn-secondary" style="padding: 4px 8px; font-size: 1rem; height: auto;"
+                <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 1rem; height: auto;"
                     onclick="closeShareModal()">×</button>
             </div>
             <div class="modal-content-scroll" style="padding: 20px;">
@@ -2541,7 +2546,8 @@
                     <label>Adicionar Colaborador (E-mail)</label>
                     <div style="display: flex; gap: 8px;">
                         <input type="email" id="collabEmail" class="input-main" placeholder="email@exemplo.com">
-                        <button class="btn-primary" style="padding: 0 20px;" onclick="addCollaborator()">Add</button>
+                        <button type="button" class="btn-primary" style="padding: 0 20px;"
+                            onclick="addCollaborator()">Add</button>
                     </div>
                 </div>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
@@ -2556,7 +2562,7 @@
     <nav class="sidebar" id="sidebar">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="font-weight: 800; font-size: 1.2rem; margin: 0;">Meu Gerenciador</h2>
-            <button onclick="toggleMenu()"
+            <button type="button" onclick="toggleMenu()"
                 style="background: none; border: none; color: var(--text-sub); font-size: 1.5rem; cursor: pointer;">&times;</button>
         </div>
 
@@ -2565,7 +2571,8 @@
                 <label
                     style="font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase;">Meus
                     Quadros</label>
-                <button class="btn-icon-small" onclick="openTemplateModal()" title="Novo Quadro">+</button>
+                <button type="button" class="btn-icon-small" onclick="openTemplateModal()"
+                    title="Novo Quadro">+</button>
             </div>
             <div id="boardsList" class="boards-list"></div>
         </div>
@@ -2576,9 +2583,9 @@
             <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-sub);">POMODORO</span>
             <div class="timer-display" id="pomodoroTimer">25:00</div>
             <div style="display: flex; gap: 5px; margin-top: 8px;">
-                <button class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
+                <button type="button" class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
                     onclick="startTimer()">▶</button>
-                <button class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
+                <button type="button" class="btn-secondary" style="flex:1; padding: 5px; height:auto;"
                     onclick="resetTimer()">↺</button>
             </div>
         </div>
@@ -2598,64 +2605,68 @@
             </div>
         </div>
 
-        <button class="btn-primary"
+        <button type="button" class="btn-primary"
             style="width: 100%; margin-top: 15px; background: #8b5cf6; border-color: #8b5cf6; color: white;"
             onclick="switchMainView('portfolio')" id="btnViewPortfolio">🌡️ Termômetro Geral</button>
-        <button id="btnShareBoard" class="btn-primary"
+        <button type="button" id="btnShareBoard" class="btn-primary"
             style="width: 100%; margin-top: 15px; background: #10b981; border-color: #10b981;"
             onclick="openShareModal()">👥 Compartilhar Quadro</button>
-        <button class="btn-primary" style="width: 100%; margin-top: 15px; background: #3b82f6; border-color: #3b82f6;"
+        <button type="button" class="btn-primary"
+            style="width: 100%; margin-top: 15px; background: #3b82f6; border-color: #3b82f6;"
             onclick="openStatsModal()">📊 Relatórios</button>
-        <button class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="toggleTheme()">🌓 Tema</button>
+        <button type="button" class="btn-primary" style="width: 100%; margin-top: 12px;" onclick="toggleTheme()">🌓
+            Tema</button>
 
         <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
             <label
                 style="font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase;">Backup</label>
             <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button class="btn-secondary" style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;"
-                    onclick="exportData()">📥 Baixar</button>
-                <button class="btn-secondary" style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;"
+                <button type="button" class="btn-secondary"
+                    style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;" onclick="exportData()">📥
+                    Baixar</button>
+                <button type="button" class="btn-secondary"
+                    style="flex:1; font-size: 0.8rem; height: auto; padding: 8px;"
                     onclick="document.getElementById('fileInput').click()">📤 Restaurar</button>
                 <input type="file" id="fileInput" style="display: none;" onchange="importData(this)">
             </div>
         </div>
 
-        <button id="btnDeleteBoard" class="btn-primary"
+        <button type="button" id="btnDeleteBoard" class="btn-primary"
             style="width: 100%; margin-top: 12px; background: #ef4444; border-color: #ef4444;"
             onclick="deleteCurrentBoard()">🗑️ Excluir Quadro</button>
-        <button class="btn-primary"
+        <button type="button" class="btn-primary"
             style="width: 100%; margin-top: 12px; margin-bottom: 80px; background: transparent; border: 1px solid #ef4444; color: #ef4444;"
             onclick="logoutFirebase()">Sair da Conta</button>
     </nav>
 
     <header>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <button class="menu-btn" onclick="toggleMenu()">☰</button>
+            <button type="button" class="menu-btn" onclick="toggleMenu()">☰</button>
             <span class="editable-title" id="boardTitle" contenteditable="true" onblur="saveTitle()">Minhas
                 demandas</span>
         </div>
         <div class="filter-wrapper">
-            <button class="btn-secondary header-btn active-view" onclick="switchMainView('board')" id="btnViewBoard">📋
-                Quadro</button>
-            <button class="btn-secondary header-btn" onclick="switchMainView('calendar')" id="btnViewCal">📅
-                Calendário</button>
-            <button class="btn-secondary header-btn" onclick="switchMainView('gantt')" id="btnViewGantt">📊
-                Cronograma</button>
-            <button class="btn-secondary header-btn" onclick="switchMainView('whiteboard')" id="btnViewWhiteboard">🎨
-                Whiteboard</button>
+            <button type="button" class="btn-secondary header-btn active-view" onclick="switchMainView('board')"
+                id="btnViewBoard">📋 Quadro</button>
+            <button type="button" class="btn-secondary header-btn" onclick="switchMainView('calendar')"
+                id="btnViewCal">📅 Calendário</button>
+            <button type="button" class="btn-secondary header-btn" onclick="switchMainView('gantt')"
+                id="btnViewGantt">📊 Cronograma</button>
+            <button type="button" class="btn-secondary header-btn" onclick="switchMainView('whiteboard')"
+                id="btnViewWhiteboard">🎨 Whiteboard</button>
 
             <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar..."
                 oninput="applyFilters()">
 
             <div class="header-dropdown">
-                <button class="btn-secondary header-btn header-dropdown-btn" onclick="toggleHeaderMenu(event)"
-                    title="Opções e Filtros">⋮</button>
+                <button type="button" class="btn-secondary header-btn header-dropdown-btn"
+                    onclick="toggleHeaderMenu(event)" title="Opções e Filtros">⋮</button>
 
                 <div class="header-dropdown-menu" id="headerDropdownMenu">
-                    <button class="dropdown-item" onclick="addColumn(); closeHeaderMenu()" id="btnAddColBtn">+ Nova
+                    <button type="button" class="dropdown-item" onclick="handleAddColumn()" id="btnAddColBtn">+ Nova
                         Coluna</button>
-                    <button class="dropdown-item" onclick="toggleMyTasks(); closeHeaderMenu()" id="btnMyTasks">🙋‍♂️
-                        Minhas Tarefas</button>
+                    <button type="button" class="dropdown-item" onclick="toggleMyTasks(); closeHeaderMenu()"
+                        id="btnMyTasks">🙋‍♂️ Minhas Tarefas</button>
 
                     <div class="dropdown-divider"></div>
 
@@ -2691,11 +2702,11 @@
                     prazos. Clique na barra para abrir a tarefa.</span>
             </div>
             <div class="gantt-controls">
-                <button class="btn-secondary" onclick="changeGanttZoom('Quarter Day')">Horas</button>
-                <button class="btn-secondary" onclick="changeGanttZoom('Half Day')">Turnos</button>
-                <button class="btn-secondary active" onclick="changeGanttZoom('Day')">Dias</button>
-                <button class="btn-secondary" onclick="changeGanttZoom('Week')">Semanas</button>
-                <button class="btn-secondary" onclick="changeGanttZoom('Month')">Meses</button>
+                <button type="button" class="btn-secondary" onclick="changeGanttZoom('Quarter Day')">Horas</button>
+                <button type="button" class="btn-secondary" onclick="changeGanttZoom('Half Day')">Turnos</button>
+                <button type="button" class="btn-secondary active" onclick="changeGanttZoom('Day')">Dias</button>
+                <button type="button" class="btn-secondary" onclick="changeGanttZoom('Week')">Semanas</button>
+                <button type="button" class="btn-secondary" onclick="changeGanttZoom('Month')">Meses</button>
             </div>
         </div>
         <div class="gantt-container-wrapper">
@@ -2705,13 +2716,15 @@
 
     <main class="whiteboard-view" id="whiteboardMain" style="display: none;">
         <div class="whiteboard-toolbar">
-            <button class="btn-primary" onclick="addStickyNote()">+ Adicionar Post-it</button>
-            <button class="btn-secondary" onclick="clearWhiteboard()">Limpar Quadro</button>
+            <button type="button" class="btn-primary" onclick="addStickyNote()">+ Adicionar Post-it</button>
+            <button type="button" class="btn-secondary" onclick="clearWhiteboard()">Limpar Quadro</button>
             <div style="width: 1px; background: var(--border); margin: 0 5px; height: 38px;"></div>
-            <button class="btn-secondary header-btn" onclick="zoomWhiteboard(-0.1)" title="Diminuir Zoom">➖</button>
+            <button type="button" class="btn-secondary header-btn" onclick="zoomWhiteboard(-0.1)"
+                title="Diminuir Zoom">➖</button>
             <span id="zoomDisplay"
                 style="display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; width: 45px; color: var(--text-main);">100%</span>
-            <button class="btn-secondary header-btn" onclick="zoomWhiteboard(0.1)" title="Aumentar Zoom">➕</button>
+            <button type="button" class="btn-secondary header-btn" onclick="zoomWhiteboard(0.1)"
+                title="Aumentar Zoom">➕</button>
         </div>
         <div class="whiteboard-canvas" id="whiteboardCanvas" ondragover="allowDrop(event)" ondrop="dropSticky(event)">
         </div>
@@ -2758,8 +2771,8 @@
             <input type="text" id="sysInput" class="input-main" style="display: none; margin-bottom: 15px;"
                 placeholder="Digite aqui...">
             <div class="sys-actions">
-                <button id="sysBtnCancel" class="btn-secondary">Cancelar</button>
-                <button id="sysBtnConfirm" class="btn-primary">OK</button>
+                <button type="button" id="sysBtnCancel" class="btn-secondary">Cancelar</button>
+                <button type="button" id="sysBtnConfirm" class="btn-primary">OK</button>
             </div>
         </div>
     </div>
@@ -2811,7 +2824,7 @@
         });
 
         // ============================================
-        // LOGICA DE AUTENTICAÇÃO (LOGIN/REGISTRO/RECUPERAÇÃO)
+        // LOGICA DE AUTENTICAÇÃO
         // ============================================
         function switchAuthView(view) {
             document.getElementById('boxLogin').style.display = 'none';
@@ -2987,6 +3000,64 @@
 
         let modalSelectedAssignees = [];
 
+        function showSysModal(title, message, type = 'alert', placeholder = '') {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('sysOverlay');
+                const titleEl = document.getElementById('sysTitle');
+                const msgEl = document.getElementById('sysMessage');
+                const inputEl = document.getElementById('sysInput');
+                const btnConfirm = document.getElementById('sysBtnConfirm');
+                const btnCancel = document.getElementById('sysBtnCancel');
+
+                titleEl.innerText = title;
+                msgEl.innerText = message;
+                inputEl.value = '';
+
+                inputEl.style.display = type === 'prompt' ? 'block' : 'none';
+                inputEl.placeholder = placeholder;
+
+                btnCancel.style.display = 'flex';
+                btnCancel.innerText = type === 'alert' ? 'Fechar' : 'Cancelar';
+
+                btnConfirm.style.display = type === 'alert' ? 'none' : 'flex';
+                btnConfirm.innerText = 'OK';
+
+                if (title.toLowerCase().includes('excluir') || title.toLowerCase().includes('limpar')) {
+                    btnConfirm.style.background = '#ef4444';
+                    btnConfirm.style.borderColor = '#ef4444';
+                } else {
+                    btnConfirm.style.background = '';
+                    btnConfirm.style.borderColor = '';
+                }
+
+                overlay.classList.add('active');
+                if (type === 'prompt') setTimeout(() => inputEl.focus(), 100);
+
+                const close = (value) => {
+                    overlay.classList.remove('active');
+
+                    btnConfirm.onclick = null;
+                    btnCancel.onclick = null;
+                    inputEl.onkeydown = null;
+
+                    resolve(value);
+                };
+
+                btnConfirm.onclick = () => close(type === 'prompt' ? inputEl.value : true);
+                btnCancel.onclick = () => close(type === 'prompt' ? null : false);
+                inputEl.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        btnConfirm.click();
+                    }
+                };
+            });
+        }
+
+        async function showSysAlert(message) { return await showSysModal('Aviso', message, 'alert'); }
+        async function showSysConfirm(message, title = 'Confirmação') { return await showSysModal(title, message, 'confirm'); }
+        async function showSysPrompt(title, placeholder = '') { return await showSysModal(title, '', 'prompt', placeholder); }
+
         async function loadFromFirebase() {
             if (!currentUser) return;
             try {
@@ -3088,7 +3159,11 @@
 
                             allBoardsData = newAllBoardsData;
 
-                            if (needsRender && currentMainView === 'board') render();
+                            if (needsRender) {
+                                if (currentMainView === 'board') render();
+                                else if (currentMainView === 'calendar') renderCalendar();
+                                else if (currentMainView === 'gantt') renderGantt();
+                            }
                             if (needsWhiteboardRender && currentMainView === 'whiteboard') renderWhiteboard();
                             if (currentMainView === 'portfolio') renderPortfolio();
                         }
@@ -3136,8 +3211,20 @@
 
             renderBoardsList();
             updateTagsDropdown();
-            render();
-            renderWhiteboard();
+
+            if (currentMainView === 'board') render();
+            else if (currentMainView === 'calendar') renderCalendar();
+            else if (currentMainView === 'gantt') renderGantt();
+            else if (currentMainView === 'whiteboard') renderWhiteboard();
+        }
+
+        function save() {
+            if (currentMainView === 'board') render();
+            else if (currentMainView === 'calendar') renderCalendar();
+            else if (currentMainView === 'gantt') renderGantt();
+            else if (currentMainView === 'portfolio') renderPortfolio();
+
+            syncToFirebase();
         }
 
         function syncToFirebase() {
@@ -3275,7 +3362,10 @@
         function applyFilters() {
             currentTagFilter = document.getElementById('filterTag').value;
             searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            render();
+
+            if (currentMainView === 'board') render();
+            else if (currentMainView === 'calendar') renderCalendar();
+            else if (currentMainView === 'gantt') renderGantt();
         }
 
         function toggleMyTasks() {
@@ -3284,214 +3374,10 @@
             if (btn) {
                 btn.style.color = filterMyTasksOnly ? 'var(--accent)' : 'var(--text-main)';
             }
-            render();
-        }
 
-        function render() {
-            if (currentMainView !== 'board') return;
-
-            document.getElementById('boardMain').style.display = 'flex';
-            document.getElementById('calendarMain').style.display = 'none';
-            document.getElementById('ganttMain').style.display = 'none';
-            document.getElementById('whiteboardMain').style.display = 'none';
-            if (document.getElementById('portfolioMain')) document.getElementById('portfolioMain').style.display = 'none';
-
-            const board = document.getElementById('boardMain');
-            board.innerHTML = '';
-
-            let filteredTasks = tasks.filter(t => {
-                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
-                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
-                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
-                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
-                const term = searchTerm ? searchTerm.toLowerCase() : '';
-                const titleMatch = t.text.toLowerCase().includes(term);
-                return matchTag && matchMyTasks && (term === '' || titleMatch);
-            });
-
-            const sortVal = document.getElementById('sortTasks')?.value || 'manual';
-            if (sortVal !== 'manual') {
-                filteredTasks.sort((a, b) => {
-                    const idA = String(a.id || '');
-                    const idB = String(b.id || '');
-                    const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
-                    const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
-                    return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
-                });
-            }
-
-            columns.forEach(col => {
-                const columnEl = document.createElement('div');
-                columnEl.className = 'column';
-                columnEl.id = col.id;
-                const count = filteredTasks.filter(t => t.status === col.id).length;
-
-                columnEl.innerHTML = `
-            <div class="column-header">
-                <div style="display:flex; align-items:center;">
-                    <span contenteditable="true" class="column-title-edit" onblur="updateColumnTitle('${col.id}', this.innerText)">${col.title}</span>
-                    <button class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;" title="Adicionar nesta coluna">+</button>
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <span id="count-${col.id}" class="count-badge">${count}</span>
-                    <button class="column-delete-btn" onclick="deleteColumn('${col.id}')" title="Excluir Coluna">✖</button>
-                </div>
-            </div>
-            <div class="tasks-container" data-status="${col.id}"></div>
-        `;
-                board.appendChild(columnEl);
-                const container = columnEl.querySelector('.tasks-container');
-
-                filteredTasks.filter(t => t.status === col.id).forEach(t => {
-                    const isDoneCol = columns.length > 0 && col.id === columns[columns.length - 1].id;
-
-                    const card = document.createElement('div');
-                    card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
-
-                    card.onclick = (e) => {
-                        if (!e.target.classList.contains('card-cover')) {
-                            openModal(t.id);
-                        }
-                    };
-
-                    let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
-
-                    let dateHtml = '';
-                    if (t.startDate || t.endDate) {
-                        let sDate = formatDate(t.startDate);
-                        let eDate = formatDate(t.endDate);
-                        let displayDate = sDate && eDate ? `${sDate} - ${eDate}` : (sDate || eDate);
-                        const isOverdue = t.endDate && t.endDate < getTodayString() && !isDoneCol;
-                        dateHtml = `<div class="date-display ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : '📅'} ${displayDate}</div>`;
-                    }
-
-                    const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
-
-                    let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
-
-                    let avatarsHtml = '';
-                    if (t.assignees && t.assignees.length > 0) {
-                        avatarsHtml = '<div class="avatar-group">';
-                        t.assignees.forEach(assignee => {
-                            let avatarName = assignee.split('@')[0];
-                            avatarsHtml += `<div class="avatar" title="${assignee}">${avatarName.charAt(0).toUpperCase()}</div>`;
-                        });
-                        avatarsHtml += '</div>';
-                    }
-
-                    let progressHtml = '';
-                    if (t.subtasks && t.subtasks.length > 0) {
-                        const total = t.subtasks.length;
-                        const doneCount = t.subtasks.filter(s => s.done).length;
-                        const pct = Math.round((doneCount / total) * 100);
-                        progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:4px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
-                    }
-
-                    card.innerHTML = `
-                ${coverHtml}
-                <div class="tag-row"><div class="tag" style="background:${tagObj.color}">${tagObj.name}</div>${dateHtml}</div>
-                <span class="card-text">${t.text}</span>
-                ${progressHtml}
-                <div class="card-footer">
-                    ${priorityBadge}
-                    ${avatarsHtml}
-                </div>
-            `;
-                    container.appendChild(card);
-                });
-            });
-
-            updateMetrics(filteredTasks);
-            setupCardDragAndDrop();
-            setupColumnDragAndDrop();
-        }
-
-        function setupCardDragAndDrop() {
-            document.querySelectorAll('.tasks-container').forEach(container => {
-                new Sortable(container, {
-                    group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
-                    onStart: function () {
-                        isDragging = true;
-                    },
-                    onEnd: function (evt) {
-                        isDragging = false;
-                        const itemEl = evt.item;
-                        const newStatus = evt.to.getAttribute('data-status');
-                        const task = tasks.find(t => t.id === itemEl.id);
-
-                        if (task) {
-                            const targetCol = columns.find(c => c.id === newStatus);
-
-                            if (task.status !== newStatus) {
-                                if (!task.history) task.history = [];
-                                task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
-                            }
-
-                            task.status = newStatus;
-
-                            const isDoneTarget = targetCol && columns.length > 0 && targetCol.id === columns[columns.length - 1].id;
-                            if (isDoneTarget) {
-                                task.endDate = getTodayString();
-                                fireConfetti();
-                            }
-                        }
-
-                        const sortVal = document.getElementById('sortTasks')?.value || 'manual';
-                        const tagFilter = document.getElementById('filterTag')?.value || 'all';
-                        const searchVal = document.getElementById('searchInput')?.value || '';
-                        const myTasksOnly = filterMyTasksOnly;
-
-                        const isFiltered = sortVal !== 'manual' || tagFilter !== 'all' || searchVal !== '' || myTasksOnly;
-
-                        if (!isFiltered) {
-                            const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
-                            let newTasks = [];
-                            let map = new Map(tasks.map(t => [t.id, t]));
-
-                            newOrderIds.forEach(id => {
-                                if (map.has(id)) {
-                                    newTasks.push(map.get(id));
-                                    map.delete(id);
-                                }
-                            });
-
-                            tasks = [...newTasks, ...Array.from(map.values())];
-                        }
-
-                        syncToFirebase();
-                        setTimeout(() => { render(); }, 50);
-                    }
-                });
-            });
-        }
-
-        function setupColumnDragAndDrop() {
-            if (boardSortableInstance) {
-                boardSortableInstance.destroy();
-            }
-
-            boardSortableInstance = new Sortable(document.getElementById('boardMain'), {
-                handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
-                onStart: function () {
-                    isDragging = true;
-                },
-                onEnd: function () {
-                    isDragging = false;
-                    let n = [];
-                    document.querySelectorAll('.column').forEach(e => {
-                        let c = columns.find(x => x.id === e.id);
-                        if (c) n.push(c);
-                    });
-                    columns = n;
-                    syncToFirebase();
-                    setTimeout(() => { render(); }, 50);
-                }
-            });
-        }
-
-        function save() {
-            render();
-            syncToFirebase();
+            if (currentMainView === 'board') render();
+            else if (currentMainView === 'calendar') renderCalendar();
+            else if (currentMainView === 'gantt') renderGantt();
         }
 
         function saveColumns() {
@@ -3750,7 +3636,7 @@
         function handleSubtaskEnter(e) { if (e.key === 'Enter') addSubtask(); }
         function toggleSubtask(i) { tempSubtasks[i].done = !tempSubtasks[i].done; renderSubtasksList(); }
         function removeSubtask(i) { tempSubtasks.splice(i, 1); renderSubtasksList(); }
-        function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6; flex:1;' : 'flex:1;'}">${s.text}</span><button onclick="removeSubtask(${i})">×</button></div>`).join(''); }
+        function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6; flex:1;' : 'flex:1;'}">${escapeHtml(s.text)}</span><button type="button" onclick="removeSubtask(${i})">×</button></div>`).join(''); }
 
         function switchDescTab(mode) {
             if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
@@ -3767,7 +3653,221 @@
             if (ok) { columns = columns.filter(c => c.id !== id); saveColumns(); }
         }
         function updateColumnTitle(id, t) { let c = columns.find(x => x.id === id); if (c) { c.title = t; saveColumns(); } }
-        async function addColumn() { const t = await showSysPrompt("Nome da coluna:"); if (t) { columns.push({ id: 'col-' + Date.now(), title: t }); saveColumns(); } }
+
+        async function handleAddColumn() {
+            closeHeaderMenu();
+            try {
+                const tName = await showSysPrompt("Nome da coluna:", "Ex: Nova Etapa");
+                if (tName && tName.trim() !== '') {
+                    columns.unshift({ id: 'col-' + Date.now(), title: tName.trim() });
+                    saveColumns();
+                }
+            } catch (e) {
+                console.error("Erro ao adicionar coluna", e);
+            }
+        }
+
+        function render() {
+            if (currentMainView !== 'board') return;
+
+            document.getElementById('boardMain').style.display = 'flex';
+            document.getElementById('calendarMain').style.display = 'none';
+            document.getElementById('ganttMain').style.display = 'none';
+            document.getElementById('whiteboardMain').style.display = 'none';
+            if (document.getElementById('portfolioMain')) document.getElementById('portfolioMain').style.display = 'none';
+
+            const board = document.getElementById('boardMain');
+            board.innerHTML = '';
+
+            let filteredTasks = tasks.filter(t => {
+                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
+                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
+                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
+                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
+                const term = searchTerm ? searchTerm.toLowerCase() : '';
+                const titleMatch = t.text.toLowerCase().includes(term);
+                return matchTag && matchMyTasks && (term === '' || titleMatch);
+            });
+
+            const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+            if (sortVal !== 'manual') {
+                filteredTasks.sort((a, b) => {
+                    const idA = String(a.id || '');
+                    const idB = String(b.id || '');
+                    const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
+                    const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
+                    return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
+                });
+            }
+
+            columns.forEach(col => {
+                const columnEl = document.createElement('div');
+                columnEl.className = 'column';
+                columnEl.id = col.id;
+                const count = filteredTasks.filter(t => t.status === col.id).length;
+
+                columnEl.innerHTML = `
+            <div class="column-header">
+                <div style="display:flex; align-items:center;">
+                    <span contenteditable="true" class="column-title-edit" onblur="updateColumnTitle('${col.id}', this.innerText)">${escapeHtml(col.title)}</span>
+                    <button class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;" title="Adicionar nesta coluna">+</button>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span id="count-${col.id}" class="count-badge">${count}</span>
+                    <button class="column-delete-btn" onclick="deleteColumn('${col.id}')" title="Excluir Coluna">✖</button>
+                </div>
+            </div>
+            <div class="tasks-container" data-status="${col.id}"></div>
+        `;
+                board.appendChild(columnEl);
+                const container = columnEl.querySelector('.tasks-container');
+
+                filteredTasks.filter(t => t.status === col.id).forEach(t => {
+                    const isDoneCol = columns.length > 0 && col.id === columns[columns.length - 1].id;
+
+                    const card = document.createElement('div');
+                    card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
+
+                    card.onclick = (e) => {
+                        if (!e.target.classList.contains('card-cover')) {
+                            openModal(t.id);
+                        }
+                    };
+
+                    let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
+
+                    let dateHtml = '';
+                    if (t.startDate || t.endDate) {
+                        let sDate = formatDate(t.startDate);
+                        let eDate = formatDate(t.endDate);
+                        let displayDate = sDate && eDate ? `${sDate} - ${eDate}` : (sDate || eDate);
+                        const isOverdue = t.endDate && t.endDate < getTodayString() && !isDoneCol;
+                        dateHtml = `<div class="date-display ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : '📅'} ${displayDate}</div>`;
+                    }
+
+                    const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
+
+                    let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
+
+                    let avatarsHtml = '';
+                    if (t.assignees && t.assignees.length > 0) {
+                        avatarsHtml = '<div class="avatar-group">';
+                        t.assignees.forEach(assignee => {
+                            let avatarName = assignee.split('@')[0];
+                            avatarsHtml += `<div class="avatar" title="${assignee}">${avatarName.charAt(0).toUpperCase()}</div>`;
+                        });
+                        avatarsHtml += '</div>';
+                    }
+
+                    let progressHtml = '';
+                    if (t.subtasks && t.subtasks.length > 0) {
+                        const total = t.subtasks.length;
+                        const doneCount = t.subtasks.filter(s => s.done).length;
+                        const pct = Math.round((doneCount / total) * 100);
+                        progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:4px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
+                    }
+
+                    card.innerHTML = `
+                ${coverHtml}
+                <div class="tag-row"><div class="tag" style="background:${tagObj.color}">${escapeHtml(tagObj.name)}</div>${dateHtml}</div>
+                <span class="card-text">${escapeHtml(t.text)}</span>
+                ${progressHtml}
+                <div class="card-footer">
+                    ${priorityBadge}
+                    ${avatarsHtml}
+                </div>
+            `;
+                    container.appendChild(card);
+                });
+            });
+
+            updateMetrics(filteredTasks);
+            setupCardDragAndDrop();
+            setupColumnDragAndDrop();
+        }
+
+        function setupCardDragAndDrop() {
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                new Sortable(container, {
+                    group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
+                    onStart: function () {
+                        isDragging = true;
+                    },
+                    onEnd: function (evt) {
+                        isDragging = false;
+                        const itemEl = evt.item;
+                        const newStatus = evt.to.getAttribute('data-status');
+                        const task = tasks.find(t => t.id === itemEl.id);
+
+                        if (task) {
+                            const targetCol = columns.find(c => c.id === newStatus);
+
+                            if (task.status !== newStatus) {
+                                if (!task.history) task.history = [];
+                                task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
+                            }
+
+                            task.status = newStatus;
+
+                            const isDoneTarget = targetCol && columns.length > 0 && targetCol.id === columns[columns.length - 1].id;
+                            if (isDoneTarget) {
+                                task.endDate = getTodayString();
+                                fireConfetti();
+                            }
+                        }
+
+                        const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+                        const tagFilter = document.getElementById('filterTag')?.value || 'all';
+                        const searchVal = document.getElementById('searchInput')?.value || '';
+                        const myTasksOnly = filterMyTasksOnly;
+
+                        const isFiltered = sortVal !== 'manual' || tagFilter !== 'all' || searchVal !== '' || myTasksOnly;
+
+                        if (!isFiltered) {
+                            const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
+                            let newTasks = [];
+                            let map = new Map(tasks.map(t => [t.id, t]));
+
+                            newOrderIds.forEach(id => {
+                                if (map.has(id)) {
+                                    newTasks.push(map.get(id));
+                                    map.delete(id);
+                                }
+                            });
+
+                            tasks = [...newTasks, ...Array.from(map.values())];
+                        }
+
+                        syncToFirebase();
+                        setTimeout(() => { render(); }, 50);
+                    }
+                });
+            });
+        }
+
+        function setupColumnDragAndDrop() {
+            if (boardSortableInstance) {
+                boardSortableInstance.destroy();
+            }
+
+            boardSortableInstance = new Sortable(document.getElementById('boardMain'), {
+                handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
+                onStart: function () {
+                    isDragging = true;
+                },
+                onEnd: function () {
+                    isDragging = false;
+                    let n = [];
+                    document.querySelectorAll('.column').forEach(e => {
+                        let c = columns.find(x => x.id === e.id);
+                        if (c) n.push(c);
+                    });
+                    columns = n;
+                    syncToFirebase();
+                    setTimeout(() => { render(); }, 50);
+                }
+            });
+        }
 
         function switchMainView(viewId) {
             currentMainView = viewId;
@@ -3799,11 +3899,6 @@
                 } else {
                     appFooter.style.display = 'flex';
                 }
-            }
-
-            const btnAddCol = document.getElementById('btnAddColBtn');
-            if (btnAddCol) {
-                btnAddCol.style.display = viewId === 'board' ? 'flex' : 'none';
             }
 
             if (viewId === 'board') {
@@ -3839,9 +3934,9 @@
 
             head.innerHTML = `<h2 style="margin:0;">${monthNames[currentMonth]} ${currentYear}</h2>
                       <div style="display:flex; gap:10px;">
-                          <button class="btn-secondary" onclick="changeMonth(-1)">⬅️</button>
-                          <button class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button>
-                          <button class="btn-secondary" onclick="changeMonth(1)">➡️</button>
+                          <button type="button" class="btn-secondary" onclick="changeMonth(-1)">⬅️</button>
+                          <button type="button" class="btn-secondary" onclick="currentMonth=new Date().getMonth(); currentYear=new Date().getFullYear(); renderCalendar();">Hoje</button>
+                          <button type="button" class="btn-secondary" onclick="changeMonth(1)">➡️</button>
                       </div>`;
             grid.innerHTML = '';
 
@@ -3855,10 +3950,20 @@
             const todayDate = new Date();
             const isCurrentMonth = todayDate.getMonth() === currentMonth && todayDate.getFullYear() === currentYear;
 
+            let filteredTasks = tasks.filter(t => {
+                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
+                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
+                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
+                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
+                const term = searchTerm ? searchTerm.toLowerCase() : '';
+                const titleMatch = t.text.toLowerCase().includes(term);
+                return matchTag && matchMyTasks && (term === '' || titleMatch);
+            });
+
             for (let d = 1; d <= daysInMonth; d++) {
                 let dayStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
 
-                let html = tasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => {
+                let html = filteredTasks.filter(t => t.endDate === dayStr || t.startDate === dayStr).map(t => {
                     const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || t.tag;
                     const taskColor = tagObj?.color || 'var(--accent)';
                     const isStart = t.startDate === dayStr;
@@ -3866,7 +3971,7 @@
 
                     return `<div class="cal-task-pill" onclick="openModal('${t.id}')" style="--pill-color: ${taskColor};" title="${t.text}">
                         <span style="font-size: 10px; margin-right: 6px; opacity: 0.8;">${icon}</span>
-                        ${t.text}
+                        ${escapeHtml(t.text)}
                     </div>`;
                 }).join('');
 
@@ -3892,7 +3997,7 @@
             if (allBoardsData[currentBoardId].owner !== currentUser.email) return showSysAlert("Apenas o dono pode remover.");
             if (e !== currentUser.email && await showSysConfirm(`Remover ${e}?`)) { currentBoardMembers = currentBoardMembers.filter(m => m !== e); syncToFirebase(); renderMembersList(); }
         }
-        function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0].charAt(0).toUpperCase()}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
+        function renderMembersList() { document.getElementById('membersList').innerHTML = currentBoardMembers.map(m => `<div class="member-item"><div style="display:flex; align-items:center; gap:8px;"><div class="avatar">${m.split('@')[0].charAt(0).toUpperCase()}</div><span style="font-size: 0.85rem; color: var(--text-sub);">${m}</span></div> ${m !== currentUser.email ? `<button type="button" onclick="removeCollaborator('${m}')" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">Remover</button>` : ''}</div>`).join(''); }
 
         function openStatsModal() { document.getElementById('statsOverlay').classList.add('active'); renderCharts(); }
         function closeStatsModal() { document.getElementById('statsOverlay').classList.remove('active'); }
@@ -3984,7 +4089,7 @@
         }
 
         function setBg(t) { currentBg = t; localStorage.setItem('nexus_bg', t); applyBackground(t); }
-        function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=200&auto=format&fit=crop')"); }
+        function applyBackground(t) { const r = document.documentElement; const base = theme === 'dark' ? '#010409' : '#f8fafc'; r.style.setProperty('--bg-body', base); r.style.setProperty('--bg-image', 'none'); if (t === 'gradient-dark') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #1e1e24, #0b0c10)'); else if (t === 'gradient-purple') r.style.setProperty('--bg-image', 'linear-gradient(135deg, #2b5876, #4e4376)'); else if (t === 'space') r.style.setProperty('--bg-image', "url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1280&auto=format&fit=crop')"); }
         function toggleTheme() { theme = theme === 'light' ? 'dark' : 'light'; document.body.setAttribute('data-theme', theme); localStorage.setItem('nexus_theme', theme); applyBackground(currentBg); if (document.getElementById('statsOverlay').classList.contains('active')) renderCharts(); }
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
 
@@ -4082,7 +4187,17 @@
         function renderGantt() {
             const wrapper = document.querySelector('.gantt-container-wrapper');
 
-            let ganttTasks = tasks.filter(t => t.startDate).map(t => {
+            let filteredTasks = tasks.filter(t => {
+                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
+                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
+                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
+                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
+                const term = searchTerm ? searchTerm.toLowerCase() : '';
+                const titleMatch = t.text.toLowerCase().includes(term);
+                return matchTag && matchMyTasks && (term === '' || titleMatch);
+            });
+
+            let ganttTasks = filteredTasks.filter(t => t.startDate).map(t => {
                 let startStr = t.startDate;
                 let endStr = t.endDate;
 
@@ -4115,7 +4230,7 @@
             });
 
             if (ganttTasks.length === 0) {
-                wrapper.innerHTML = '<div style="color: var(--text-sub); text-align: center; margin-top: 50px; font-weight: 600;">⚠️ Nenhuma tarefa com "Data de Início" definida.<br><br>Defina as datas nos cards para gerar o gráfico.</div>';
+                wrapper.innerHTML = '<div style="color: var(--text-sub); text-align: center; margin-top: 50px; font-weight: 600;">⚠️ Nenhuma tarefa com "Data de Início" definida ou compatível com os filtros atuais.<br><br>Defina as datas nos cards para gerar o gráfico.</div>';
                 ganttChart = null;
                 return;
             }
@@ -4220,9 +4335,9 @@
                 sticky.innerHTML = `
             <div class="sticky-header">
                 <div class="sticky-colors">${colorsHtml}</div>
-                <button class="sticky-delete" onclick="deleteSticky('${note.id}')" title="Excluir">✖</button>
+                <button type="button" class="sticky-delete" onclick="deleteSticky('${note.id}')" title="Excluir">✖</button>
             </div>
-            <textarea class="sticky-content" placeholder="Digite sua ideia..." onchange="updateStickyText('${note.id}', this.value)">${note.text || ''}</textarea>
+            <textarea class="sticky-content" placeholder="Digite sua ideia..." onchange="updateStickyText('${note.id}', this.value)">${escapeHtml(note.text || '')}</textarea>
         `;
 
                 sticky.addEventListener('dragstart', (e) => {
@@ -4343,20 +4458,6 @@
         // VISÃO GLOBAL DE PORTFÓLIO (TERMÔMETRO REAL)
         // ============================================
 
-        function toggleBoardPortfolioStatus(bId) {
-            if (!currentUser || !allBoardsData[bId]) return;
-
-            const currentState = allBoardsData[bId].excludeFromPortfolio || false;
-            allBoardsData[bId].excludeFromPortfolio = !currentState;
-
-            db.collection('boards').doc(bId).set({
-                excludeFromPortfolio: !currentState,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }).catch(err => console.error(err));
-
-            renderPortfolio();
-        }
-
         function renderPortfolio() {
             const grid = document.getElementById('portfolioGrid');
             if (!grid) return;
@@ -4444,7 +4545,7 @@
 
                     return `
                 <div class="port-task-item ${isDone ? "done" : ""}">
-                    <button class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}', '${isDone ? board.todoColId : board.doneColId}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
+                    <button type="button" class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}', '${isDone ? board.todoColId : board.doneColId}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
                         ${isDone ? "✓" : ""}
                     </button>
                     <div class="port-task-content">
@@ -4486,7 +4587,7 @@
             </div>
             <form class="port-add-form" onsubmit="addPortfolioTask(event, '${board.bId}', '${board.todoColId}')">
                 <input class="port-input" placeholder="Adicionar tarefa rápida..." required maxlength="80" ${board.isExcluded ? 'disabled' : ''}>
-                <button class="port-btn-add" type="submit" ${board.isExcluded ? 'disabled style="opacity:0.5;"' : ''}>+</button>
+                <button type="button" class="port-btn-add" type="submit" ${board.isExcluded ? 'disabled style="opacity:0.5;"' : ''}>+</button>
             </form>
         `;
 
