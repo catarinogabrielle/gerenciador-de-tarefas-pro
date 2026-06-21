@@ -1066,20 +1066,6 @@
             outline: none;
         }
 
-        .column-delete-btn {
-            background: none;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            font-size: 14px;
-            opacity: 0;
-            margin-left: 5px;
-        }
-
-        .column-header:hover .column-delete-btn {
-            opacity: 1;
-        }
-
         .count-badge {
             background: var(--bg-body);
             padding: 4px 10px;
@@ -1114,6 +1100,38 @@
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             border-color: var(--text-sub);
+        }
+
+        /* --- NOVO: CHECKBOX RÁPIDO DO CARD INDEPENDENTE --- */
+        .card-quick-check {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: transparent;
+            transition: 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-quick-check:hover {
+            border-color: var(--done-border);
+            color: var(--done-border);
+        }
+
+        .card.finalizado .card-quick-check {
+            background: var(--done-border);
+            border-color: var(--done-border);
+            color: white;
         }
 
         .card-cover {
@@ -1151,6 +1169,7 @@
             gap: 8px;
             margin-bottom: 12px;
             flex-wrap: wrap;
+            padding-right: 28px;
         }
 
         .tag {
@@ -2804,10 +2823,11 @@
         }
 
         // ============================================
-        // LOGICA DO MENU 3 PONTOS (DROPDOWN)
+        // LOGICA DO MENU 3 PONTOS (DROPDOWN CABEÇALHO E COLUNA)
         // ============================================
         function toggleHeaderMenu(e) {
             e.stopPropagation();
+            document.querySelectorAll('.col-menu').forEach(m => m.classList.remove('active'));
             document.getElementById('headerDropdownMenu').classList.toggle('active');
         }
 
@@ -2816,11 +2836,26 @@
             if (menu) menu.classList.remove('active');
         }
 
+        function toggleColMenu(e, colId) {
+            e.stopPropagation();
+            document.getElementById('headerDropdownMenu').classList.remove('active');
+            document.querySelectorAll('.col-menu').forEach(m => {
+                if (m.id !== 'menu-' + colId) m.classList.remove('active');
+            });
+            document.getElementById('menu-' + colId).classList.toggle('active');
+        }
+
         document.addEventListener('click', (e) => {
-            const menu = document.getElementById('headerDropdownMenu');
-            if (menu && menu.classList.contains('active') && !e.target.closest('.header-dropdown')) {
-                menu.classList.remove('active');
+            const headerMenu = document.getElementById('headerDropdownMenu');
+            if (headerMenu && headerMenu.classList.contains('active') && !e.target.closest('.header-dropdown')) {
+                headerMenu.classList.remove('active');
             }
+
+            document.querySelectorAll('.col-menu').forEach(m => {
+                if (m.classList.contains('active') && !e.target.closest('.header-dropdown')) {
+                    m.classList.remove('active');
+                }
+            });
         });
 
         // ============================================
@@ -3021,6 +3056,7 @@
 
                 btnConfirm.style.display = type === 'alert' ? 'none' : 'flex';
                 btnConfirm.innerText = 'OK';
+                btnConfirm.className = 'btn-primary';
 
                 if (title.toLowerCase().includes('excluir') || title.toLowerCase().includes('limpar')) {
                     btnConfirm.style.background = '#ef4444';
@@ -3198,6 +3234,10 @@
                 if (!t.assignees) {
                     t.assignees = t.assignee ? [t.assignee] : [];
                 }
+                // Assegurar a conversão antiga se não tiver isDone definido
+                if (t.isDone === undefined) {
+                    t.isDone = false;
+                }
             });
 
             tags = bData.tags || [...defaultTags];
@@ -3307,11 +3347,11 @@
 
             let initCols = [];
             if (type === 'sprint') {
-                initCols = [{ id: 'col-1', title: 'Backlog' }, { id: 'col-2', title: 'Em Dev' }, { id: 'col-3', title: 'Code Review' }, { id: 'col-4', title: 'Deploy / Concluído' }];
+                initCols = [{ id: 'col-1', title: 'Backlog', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Em Dev', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Code Review', autoDone: false, autoAssign: false }, { id: 'col-4', title: 'Deploy / Concluído', autoDone: true, autoAssign: false }];
             } else if (type === 'evento') {
-                initCols = [{ id: 'col-1', title: 'Planejamento' }, { id: 'col-2', title: 'Pendências' }, { id: 'col-3', title: 'Em Execução' }, { id: 'col-4', title: 'Finalizado' }];
+                initCols = [{ id: 'col-1', title: 'Planejamento', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Pendências', autoDone: false, autoAssign: false }, { id: 'col-3', title: 'Em Execução', autoDone: false, autoAssign: true }, { id: 'col-4', title: 'Finalizado', autoDone: true, autoAssign: false }];
             } else {
-                initCols = [{ id: 'col-1', title: 'A Fazer' }, { id: 'col-2', title: 'Fazendo' }, { id: 'col-3', title: 'Concluído' }];
+                initCols = [{ id: 'col-1', title: 'A Fazer', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Fazendo', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Concluído', autoDone: true, autoAssign: false }];
             }
 
             const newId = 'board-' + Date.now();
@@ -3383,6 +3423,263 @@
         function saveColumns() {
             render();
             syncToFirebase();
+        }
+
+        function toggleColAutomation(colId, prop, val) {
+            const col = columns.find(c => c.id === colId);
+            if (col) {
+                col[prop] = val;
+                saveColumns();
+            }
+        }
+
+        function toggleTaskStatus(event, taskId) {
+            event.stopPropagation();
+
+            const taskIndex = tasks.findIndex(t => t.id === taskId);
+            if (taskIndex === -1) return;
+
+            const task = tasks[taskIndex];
+            task.isDone = !task.isDone;
+
+            if (task.isDone) {
+                task.endDate = getTodayString();
+                fireConfetti();
+                if (!task.history) task.history = [];
+                task.history.unshift({ date: new Date().toISOString(), user: currentUser ? currentUser.email : 'Usuário', action: `Marcou a tarefa como concluída` });
+            } else {
+                if (!task.history) task.history = [];
+                task.history.unshift({ date: new Date().toISOString(), user: currentUser ? currentUser.email : 'Usuário', action: `Marcou a tarefa como pendente` });
+            }
+
+            save();
+        }
+
+        function render() {
+            if (currentMainView !== 'board') return;
+
+            document.getElementById('boardMain').style.display = 'flex';
+            document.getElementById('calendarMain').style.display = 'none';
+            document.getElementById('ganttMain').style.display = 'none';
+            document.getElementById('whiteboardMain').style.display = 'none';
+            if (document.getElementById('portfolioMain')) document.getElementById('portfolioMain').style.display = 'none';
+
+            const board = document.getElementById('boardMain');
+            board.innerHTML = '';
+
+            let filteredTasks = tasks.filter(t => {
+                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
+                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
+                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
+                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
+                const term = searchTerm ? searchTerm.toLowerCase() : '';
+                const titleMatch = t.text.toLowerCase().includes(term);
+                return matchTag && matchMyTasks && (term === '' || titleMatch);
+            });
+
+            const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+            if (sortVal !== 'manual') {
+                filteredTasks.sort((a, b) => {
+                    const idA = String(a.id || '');
+                    const idB = String(b.id || '');
+                    const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
+                    const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
+                    return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
+                });
+            }
+
+            columns.forEach(col => {
+                const columnEl = document.createElement('div');
+                columnEl.className = 'column';
+                columnEl.id = col.id;
+                const count = filteredTasks.filter(t => t.status === col.id).length;
+
+                columnEl.innerHTML = `
+            <div class="column-header">
+                <div style="display:flex; align-items:center;">
+                    <span contenteditable="true" class="column-title-edit" onblur="updateColumnTitle('${col.id}', this.innerText)">${escapeHtml(col.title)}</span>
+                    <button type="button" class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;" title="Adicionar nesta coluna">+</button>
+                </div>
+                <div style="display:flex; align-items:center; gap: 5px;">
+                    <span id="count-${col.id}" class="count-badge">${count}</span>
+                    <div class="header-dropdown" style="margin-left: 5px;">
+                        <button type="button" class="btn-icon-small" onclick="toggleColMenu(event, '${col.id}')" title="Opções da Coluna">⋮</button>
+                        <div class="header-dropdown-menu col-menu" id="menu-${col.id}">
+                            <div class="dropdown-label">Automações da Coluna</div>
+                            <label class="dropdown-item" style="cursor:pointer;" onclick="event.stopPropagation()">
+                                <input type="checkbox" onchange="toggleColAutomation('${col.id}', 'autoDone', this.checked)" ${col.autoDone ? 'checked' : ''}> ✓ Auto-Concluir Tarefas
+                            </label>
+                            <label class="dropdown-item" style="cursor:pointer;" onclick="event.stopPropagation()">
+                                <input type="checkbox" onchange="toggleColAutomation('${col.id}', 'autoAssign', this.checked)" ${col.autoAssign ? 'checked' : ''}> 🙋‍♂️ Auto-Atribuir a Mim
+                            </label>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item" style="color: #ef4444;" onclick="deleteColumn('${col.id}')">🗑️ Excluir Coluna</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tasks-container" data-status="${col.id}"></div>
+        `;
+                board.appendChild(columnEl);
+                const container = columnEl.querySelector('.tasks-container');
+
+                filteredTasks.filter(t => t.status === col.id).forEach(t => {
+                    const isDoneCol = t.isDone === true;
+
+                    const card = document.createElement('div');
+                    card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
+
+                    card.onclick = (e) => {
+                        if (!e.target.classList.contains('card-cover')) {
+                            openModal(t.id);
+                        }
+                    };
+
+                    let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
+
+                    let dateHtml = '';
+                    if (t.startDate || t.endDate) {
+                        let sDate = formatDate(t.startDate);
+                        let eDate = formatDate(t.endDate);
+                        let displayDate = sDate && eDate ? `${sDate} - ${eDate}` : (sDate || eDate);
+                        const isOverdue = t.endDate && t.endDate < getTodayString() && !isDoneCol;
+                        dateHtml = `<div class="date-display ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : '📅'} ${displayDate}</div>`;
+                    }
+
+                    const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
+
+                    let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
+
+                    let avatarsHtml = '';
+                    if (t.assignees && t.assignees.length > 0) {
+                        avatarsHtml = '<div class="avatar-group">';
+                        t.assignees.forEach(assignee => {
+                            let avatarName = assignee.split('@')[0];
+                            avatarsHtml += `<div class="avatar" title="${assignee}">${avatarName.charAt(0).toUpperCase()}</div>`;
+                        });
+                        avatarsHtml += '</div>';
+                    }
+
+                    let progressHtml = '';
+                    if (t.subtasks && t.subtasks.length > 0) {
+                        const total = t.subtasks.length;
+                        const doneCount = t.subtasks.filter(s => s.done).length;
+                        const pct = Math.round((doneCount / total) * 100);
+                        progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:4px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
+                    }
+
+                    card.innerHTML = `
+                <div class="card-quick-check" onclick="toggleTaskStatus(event, '${t.id}')" title="Marcar/Desmarcar Concluído">✓</div>
+                ${coverHtml}
+                <div class="tag-row"><div class="tag" style="background:${tagObj.color}">${escapeHtml(tagObj.name)}</div>${dateHtml}</div>
+                <span class="card-text">${escapeHtml(t.text)}</span>
+                ${progressHtml}
+                <div class="card-footer">
+                    ${priorityBadge}
+                    ${avatarsHtml}
+                </div>
+            `;
+                    container.appendChild(card);
+                });
+            });
+
+            updateMetrics(filteredTasks);
+            setupCardDragAndDrop();
+            setupColumnDragAndDrop();
+        }
+
+        function setupCardDragAndDrop() {
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                new Sortable(container, {
+                    group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
+                    onStart: function () {
+                        isDragging = true;
+                    },
+                    onEnd: function (evt) {
+                        isDragging = false;
+                        const itemEl = evt.item;
+                        const newStatus = evt.to.getAttribute('data-status');
+                        const task = tasks.find(t => t.id === itemEl.id);
+
+                        if (task) {
+                            const targetCol = columns.find(c => c.id === newStatus);
+
+                            if (task.status !== newStatus) {
+                                if (!task.history) task.history = [];
+                                task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
+
+                                // AUTOMAÇÕES DE COLUNA
+                                if (targetCol) {
+                                    if (targetCol.autoDone && !task.isDone) {
+                                        task.isDone = true;
+                                        task.endDate = getTodayString();
+                                        fireConfetti();
+                                        task.history.unshift({ date: new Date().toISOString(), user: 'Sistema', action: `Tarefa auto-concluída pela coluna` });
+                                    }
+                                    if (targetCol.autoAssign) {
+                                        if (!task.assignees) task.assignees = [];
+                                        if (!task.assignees.includes(currentUser.email)) {
+                                            task.assignees.push(currentUser.email);
+                                            task.history.unshift({ date: new Date().toISOString(), user: 'Sistema', action: `Você foi auto-atribuído pela coluna` });
+                                        }
+                                    }
+                                }
+                            }
+
+                            task.status = newStatus;
+                        }
+
+                        const sortVal = document.getElementById('sortTasks')?.value || 'manual';
+                        const tagFilter = document.getElementById('filterTag')?.value || 'all';
+                        const searchVal = document.getElementById('searchInput')?.value || '';
+                        const myTasksOnly = filterMyTasksOnly;
+
+                        const isFiltered = sortVal !== 'manual' || tagFilter !== 'all' || searchVal !== '' || myTasksOnly;
+
+                        if (!isFiltered) {
+                            const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
+                            let newTasks = [];
+                            let map = new Map(tasks.map(t => [t.id, t]));
+
+                            newOrderIds.forEach(id => {
+                                if (map.has(id)) {
+                                    newTasks.push(map.get(id));
+                                    map.delete(id);
+                                }
+                            });
+
+                            tasks = [...newTasks, ...Array.from(map.values())];
+                        }
+
+                        syncToFirebase();
+                        setTimeout(() => { render(); }, 50);
+                    }
+                });
+            });
+        }
+
+        function setupColumnDragAndDrop() {
+            if (boardSortableInstance) {
+                boardSortableInstance.destroy();
+            }
+
+            boardSortableInstance = new Sortable(document.getElementById('boardMain'), {
+                handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
+                onStart: function () {
+                    isDragging = true;
+                },
+                onEnd: function () {
+                    isDragging = false;
+                    let n = [];
+                    document.querySelectorAll('.column').forEach(e => {
+                        let c = columns.find(x => x.id === e.id);
+                        if (c) n.push(c);
+                    });
+                    columns = n;
+                    syncToFirebase();
+                    setTimeout(() => { render(); }, 50);
+                }
+            });
         }
 
         function openModal(taskId = null, initialStatus = null) {
@@ -3482,12 +3779,15 @@
                     if (JSON.stringify(oldAssignees.sort()) !== JSON.stringify(newTaskData.assignees.sort())) {
                         addHistoryLog(`Atualizou os responsáveis`);
                     }
+                    // Preserve isDone status when editing
+                    newTaskData.isDone = tasks[i].isDone || false;
                     tasks[i] = { ...tasks[i], ...newTaskData };
                 }
             } else {
                 newTaskData.id = 'id-' + Date.now();
                 newTaskData.status = currentTargetColumn || (columns.length > 0 ? columns[0].id : 'todo');
                 newTaskData.history = [{ date: new Date().toISOString(), user: currentUser.email, action: 'Criou a tarefa' }];
+                newTaskData.isDone = false; // New tasks are explicitly not done
 
                 tasks.unshift(newTaskData);
             }
@@ -3659,214 +3959,12 @@
             try {
                 const tName = await showSysPrompt("Nome da coluna:", "Ex: Nova Etapa");
                 if (tName && tName.trim() !== '') {
-                    columns.unshift({ id: 'col-' + Date.now(), title: tName.trim() });
+                    columns.unshift({ id: 'col-' + Date.now(), title: tName.trim(), autoDone: false, autoAssign: false });
                     saveColumns();
                 }
             } catch (e) {
                 console.error("Erro ao adicionar coluna", e);
             }
-        }
-
-        function render() {
-            if (currentMainView !== 'board') return;
-
-            document.getElementById('boardMain').style.display = 'flex';
-            document.getElementById('calendarMain').style.display = 'none';
-            document.getElementById('ganttMain').style.display = 'none';
-            document.getElementById('whiteboardMain').style.display = 'none';
-            if (document.getElementById('portfolioMain')) document.getElementById('portfolioMain').style.display = 'none';
-
-            const board = document.getElementById('boardMain');
-            board.innerHTML = '';
-
-            let filteredTasks = tasks.filter(t => {
-                if (!t.assignees) t.assignees = t.assignee ? [t.assignee] : [];
-                const tObj = typeof t.tag === 'string' ? { name: t.tag } : (t.tag || { name: '' });
-                const matchTag = currentTagFilter === 'all' || tObj.name === currentTagFilter;
-                const matchMyTasks = filterMyTasksOnly ? t.assignees.includes(currentUser.email) : true;
-                const term = searchTerm ? searchTerm.toLowerCase() : '';
-                const titleMatch = t.text.toLowerCase().includes(term);
-                return matchTag && matchMyTasks && (term === '' || titleMatch);
-            });
-
-            const sortVal = document.getElementById('sortTasks')?.value || 'manual';
-            if (sortVal !== 'manual') {
-                filteredTasks.sort((a, b) => {
-                    const idA = String(a.id || '');
-                    const idB = String(b.id || '');
-                    const timeA = parseInt(idA.replace(/\D/g, '')) || 0;
-                    const timeB = parseInt(idB.replace(/\D/g, '')) || 0;
-                    return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
-                });
-            }
-
-            columns.forEach(col => {
-                const columnEl = document.createElement('div');
-                columnEl.className = 'column';
-                columnEl.id = col.id;
-                const count = filteredTasks.filter(t => t.status === col.id).length;
-
-                columnEl.innerHTML = `
-            <div class="column-header">
-                <div style="display:flex; align-items:center;">
-                    <span contenteditable="true" class="column-title-edit" onblur="updateColumnTitle('${col.id}', this.innerText)">${escapeHtml(col.title)}</span>
-                    <button class="btn-add-rounded" onclick="openModal(null, '${col.id}')" style="margin-left: 10px;" title="Adicionar nesta coluna">+</button>
-                </div>
-                <div style="display:flex; align-items:center;">
-                    <span id="count-${col.id}" class="count-badge">${count}</span>
-                    <button class="column-delete-btn" onclick="deleteColumn('${col.id}')" title="Excluir Coluna">✖</button>
-                </div>
-            </div>
-            <div class="tasks-container" data-status="${col.id}"></div>
-        `;
-                board.appendChild(columnEl);
-                const container = columnEl.querySelector('.tasks-container');
-
-                filteredTasks.filter(t => t.status === col.id).forEach(t => {
-                    const isDoneCol = columns.length > 0 && col.id === columns[columns.length - 1].id;
-
-                    const card = document.createElement('div');
-                    card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
-
-                    card.onclick = (e) => {
-                        if (!e.target.classList.contains('card-cover')) {
-                            openModal(t.id);
-                        }
-                    };
-
-                    let coverHtml = t.cover ? `<img src="${t.cover}" class="card-cover" onclick="openImageViewer(event, this.src)" title="Clique para ampliar">` : '';
-
-                    let dateHtml = '';
-                    if (t.startDate || t.endDate) {
-                        let sDate = formatDate(t.startDate);
-                        let eDate = formatDate(t.endDate);
-                        let displayDate = sDate && eDate ? `${sDate} - ${eDate}` : (sDate || eDate);
-                        const isOverdue = t.endDate && t.endDate < getTodayString() && !isDoneCol;
-                        dateHtml = `<div class="date-display ${isOverdue ? 'overdue' : ''}">${isOverdue ? '⚠️' : '📅'} ${displayDate}</div>`;
-                    }
-
-                    const tagObj = tags.find(x => x.name === (t.tag?.name || t.tag)) || { name: t.tag?.name || t.tag, color: '#3b82f6' };
-
-                    let priorityBadge = `<div class="prio-badge prio-${t.priority || 'Média'}">${t.priority || 'Média'}</div>`;
-
-                    let avatarsHtml = '';
-                    if (t.assignees && t.assignees.length > 0) {
-                        avatarsHtml = '<div class="avatar-group">';
-                        t.assignees.forEach(assignee => {
-                            let avatarName = assignee.split('@')[0];
-                            avatarsHtml += `<div class="avatar" title="${assignee}">${avatarName.charAt(0).toUpperCase()}</div>`;
-                        });
-                        avatarsHtml += '</div>';
-                    }
-
-                    let progressHtml = '';
-                    if (t.subtasks && t.subtasks.length > 0) {
-                        const total = t.subtasks.length;
-                        const doneCount = t.subtasks.filter(s => s.done).length;
-                        const pct = Math.round((doneCount / total) * 100);
-                        progressHtml = `<div style="font-size: 10px; color: var(--text-sub); margin-top: 5px;">Checklist ${doneCount}/${total}</div><div class="prog-track" style="height:4px; margin-top:4px;"><div class="prog-fill" style="width: ${pct}%; background: var(--accent);"></div></div>`;
-                    }
-
-                    card.innerHTML = `
-                ${coverHtml}
-                <div class="tag-row"><div class="tag" style="background:${tagObj.color}">${escapeHtml(tagObj.name)}</div>${dateHtml}</div>
-                <span class="card-text">${escapeHtml(t.text)}</span>
-                ${progressHtml}
-                <div class="card-footer">
-                    ${priorityBadge}
-                    ${avatarsHtml}
-                </div>
-            `;
-                    container.appendChild(card);
-                });
-            });
-
-            updateMetrics(filteredTasks);
-            setupCardDragAndDrop();
-            setupColumnDragAndDrop();
-        }
-
-        function setupCardDragAndDrop() {
-            document.querySelectorAll('.tasks-container').forEach(container => {
-                new Sortable(container, {
-                    group: 'shared', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
-                    onStart: function () {
-                        isDragging = true;
-                    },
-                    onEnd: function (evt) {
-                        isDragging = false;
-                        const itemEl = evt.item;
-                        const newStatus = evt.to.getAttribute('data-status');
-                        const task = tasks.find(t => t.id === itemEl.id);
-
-                        if (task) {
-                            const targetCol = columns.find(c => c.id === newStatus);
-
-                            if (task.status !== newStatus) {
-                                if (!task.history) task.history = [];
-                                task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
-                            }
-
-                            task.status = newStatus;
-
-                            const isDoneTarget = targetCol && columns.length > 0 && targetCol.id === columns[columns.length - 1].id;
-                            if (isDoneTarget) {
-                                task.endDate = getTodayString();
-                                fireConfetti();
-                            }
-                        }
-
-                        const sortVal = document.getElementById('sortTasks')?.value || 'manual';
-                        const tagFilter = document.getElementById('filterTag')?.value || 'all';
-                        const searchVal = document.getElementById('searchInput')?.value || '';
-                        const myTasksOnly = filterMyTasksOnly;
-
-                        const isFiltered = sortVal !== 'manual' || tagFilter !== 'all' || searchVal !== '' || myTasksOnly;
-
-                        if (!isFiltered) {
-                            const newOrderIds = Array.from(document.querySelectorAll('.card')).map(c => c.id);
-                            let newTasks = [];
-                            let map = new Map(tasks.map(t => [t.id, t]));
-
-                            newOrderIds.forEach(id => {
-                                if (map.has(id)) {
-                                    newTasks.push(map.get(id));
-                                    map.delete(id);
-                                }
-                            });
-
-                            tasks = [...newTasks, ...Array.from(map.values())];
-                        }
-
-                        syncToFirebase();
-                        setTimeout(() => { render(); }, 50);
-                    }
-                });
-            });
-        }
-
-        function setupColumnDragAndDrop() {
-            if (boardSortableInstance) {
-                boardSortableInstance.destroy();
-            }
-
-            boardSortableInstance = new Sortable(document.getElementById('boardMain'), {
-                handle: '.column-header', animation: 150, ghostClass: 'sortable-ghost-column', delay: 100, delayOnTouchOnly: true,
-                onStart: function () {
-                    isDragging = true;
-                },
-                onEnd: function () {
-                    isDragging = false;
-                    let n = [];
-                    document.querySelectorAll('.column').forEach(e => {
-                        let c = columns.find(x => x.id === e.id);
-                        if (c) n.push(c);
-                    });
-                    columns = n;
-                    syncToFirebase();
-                    setTimeout(() => { render(); }, 50);
-                }
-            });
         }
 
         function switchMainView(viewId) {
@@ -3899,6 +3997,11 @@
                 } else {
                     appFooter.style.display = 'flex';
                 }
+            }
+
+            const btnAddCol = document.getElementById('btnAddColBtn');
+            if (btnAddCol) {
+                btnAddCol.style.display = viewId === 'board' ? 'flex' : 'none';
             }
 
             if (viewId === 'board') {
@@ -4006,10 +4109,7 @@
         function renderCharts() {
             const today = getTodayString();
 
-            const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
-            const doneColId = doneColObj ? doneColObj.id : 'done';
-
-            const stats = { total: tasks.length, done: tasks.filter(t => t.status === doneColId).length, late: tasks.filter(t => t.endDate && t.endDate < today && t.status !== doneColId).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
+            const stats = { total: tasks.length, done: tasks.filter(t => t.isDone).length, late: tasks.filter(t => t.endDate && t.endDate < today && !t.isDone).length, priority: { Alta: 0, Média: 0, Baixa: 0 } };
             const tagCounts = {}; tags.forEach(t => tagCounts[t.name] = 0);
 
             const assigneeData = {};
@@ -4025,7 +4125,7 @@
                 assigns.forEach(assign => {
                     if (!assigneeData[assign]) assigneeData[assign] = { total: 0, done: 0 };
                     assigneeData[assign].total++;
-                    if (t.status === doneColId) assigneeData[assign].done++;
+                    if (t.isDone) assigneeData[assign].done++;
                 });
             });
 
@@ -4099,10 +4199,9 @@
                 if (el) el.innerText = tl.filter(t => t.status === c.id).length;
             });
 
-            const doneColObj = columns.length > 0 ? columns[columns.length - 1] : null;
             let pct = 0;
-            if (tl.length > 0 && doneColObj) {
-                const doneCount = tl.filter(t => t.status === doneColObj.id).length;
+            if (tl.length > 0) {
+                const doneCount = tl.filter(t => t.isDone).length;
                 pct = Math.round((doneCount / tl.length) * 100);
             }
             document.getElementById('prog-fill').style.width = pct + '%';
@@ -4210,10 +4309,9 @@
 
                 let safeEndStr = endD.toISOString().split('T')[0];
 
-                const doneColId = columns.length > 0 ? columns[columns.length - 1].id : 'done';
                 let progress = 0;
 
-                if (t.status === doneColId) {
+                if (t.isDone) {
                     progress = 100;
                 } else if (t.subtasks && t.subtasks.length > 0) {
                     let p = Math.round((t.subtasks.filter(s => s.done).length / t.subtasks.length) * 100);
@@ -4479,12 +4577,11 @@
                 const bCols = bData.columns || [];
                 const isExcluded = bData.excludeFromPortfolio || false;
 
-                const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
                 const todoColId = bCols.length > 0 ? bCols[0].id : 'todo';
 
                 let boardDoneTasks = 0;
                 bTasks.forEach(t => {
-                    if (t.status === doneColId) boardDoneTasks++;
+                    if (t.isDone) boardDoneTasks++;
                 });
 
                 if (!isExcluded) {
@@ -4497,7 +4594,6 @@
                     bTitle: boards.find(b => b.id === bId)?.title || 'Quadro Desconhecido',
                     bTasks,
                     bCols,
-                    doneColId,
                     todoColId,
                     boardDoneTasks,
                     pct: bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0,
@@ -4539,13 +4635,13 @@
                 }
 
                 const tasksHtml = board.bTasks.map(t => {
-                    const isDone = t.status === board.doneColId;
+                    const isDone = t.isDone;
                     const tagColor = t.tag?.color || 'var(--accent)';
                     const tagName = t.tag?.name || (typeof t.tag === 'string' ? t.tag : '');
 
                     return `
                 <div class="port-task-item ${isDone ? "done" : ""}">
-                    <button type="button" class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}', '${isDone ? board.todoColId : board.doneColId}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
+                    <button type="button" class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
                         ${isDone ? "✓" : ""}
                     </button>
                     <div class="port-task-content">
@@ -4598,7 +4694,7 @@
             document.getElementById("portGeneralFill").style.width = `${globalPct}%`;
         }
 
-        function togglePortfolioTask(boardId, taskId, newStatusId) {
+        function togglePortfolioTask(boardId, taskId) {
             if (!allBoardsData[boardId]) return;
             if (allBoardsData[boardId].excludeFromPortfolio) return;
 
@@ -4606,21 +4702,19 @@
             const taskIndex = bTasks.findIndex(t => t.id === taskId);
 
             if (taskIndex > -1) {
-                bTasks[taskIndex].status = newStatusId;
+                bTasks[taskIndex].isDone = !bTasks[taskIndex].isDone;
 
-                const bCols = allBoardsData[boardId].columns || [];
-                const doneColId = bCols.length > 0 ? bCols[bCols.length - 1].id : 'done';
-
-                if (newStatusId === doneColId) {
+                if (bTasks[taskIndex].isDone) {
                     bTasks[taskIndex].endDate = getTodayString();
                     fireConfetti();
                 }
 
                 if (!bTasks[taskIndex].history) bTasks[taskIndex].history = [];
+                const msg = bTasks[taskIndex].isDone ? 'Concluiu' : 'Marcou como pendente';
                 bTasks[taskIndex].history.unshift({
                     date: new Date().toISOString(),
                     user: currentUser ? currentUser.email : 'Termômetro Global',
-                    action: `Moveu tarefa via Termômetro Geral`
+                    action: `${msg} via Termômetro Geral`
                 });
 
                 syncSpecificBoardToFirebase(boardId);
@@ -4641,6 +4735,7 @@
                 text: text,
                 status: firstColId,
                 priority: 'Média',
+                isDone: false,
                 history: [{
                     date: new Date().toISOString(),
                     user: currentUser ? currentUser.email : 'Termômetro Global',
