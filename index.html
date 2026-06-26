@@ -3673,7 +3673,8 @@
             currentTargetColumn = initialStatus;
 
             if (taskId) {
-                editingTaskId = taskId; const task = tasks.find(t => t.id === taskId);
+                editingTaskId = taskId;
+                const task = tasks.find(t => t.id === taskId);
                 if (!task) return;
                 document.getElementById('modalTitle').innerText = "Detalhes da Tarefa";
                 document.getElementById('modalSaveBtn').innerText = "Atualizar Tarefa";
@@ -3694,6 +3695,8 @@
                 tempSubtasks = task.subtasks ? JSON.parse(JSON.stringify(task.subtasks)) : [];
                 tempComments = task.comments ? JSON.parse(JSON.stringify(task.comments)) : [];
                 tempHistory = task.history || [];
+
+                switchDescTab('preview');
             } else {
                 editingTaskId = null;
                 document.getElementById('modalTitle').innerText = "Nova Tarefa";
@@ -3708,6 +3711,8 @@
                     document.getElementById('modalTagInput').selectedIndex = 0;
                     updateColorPicker();
                 }
+
+                switchDescTab('write');
             }
 
             renderAssigneeSelect();
@@ -3939,8 +3944,23 @@
         function renderSubtasksList() { document.getElementById('subtaskList').innerHTML = tempSubtasks.map((s, i) => `<div class="subtask-item"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleSubtask(${i})"><span style="${s.done ? 'text-decoration: line-through; opacity: 0.6; flex:1;' : 'flex:1;'}">${escapeHtml(s.text)}</span><button type="button" onclick="removeSubtask(${i})">×</button></div>`).join(''); }
 
         function switchDescTab(mode) {
-            if (mode === 'write') { document.getElementById('btnWrite').classList.add('active'); document.getElementById('btnPreview').classList.remove('active'); document.getElementById('modalDescriptionInput').style.display = 'block'; document.getElementById('descPreview').style.display = 'none'; }
-            else { document.getElementById('btnWrite').classList.remove('active'); document.getElementById('btnPreview').classList.add('active'); document.getElementById('modalDescriptionInput').style.display = 'none'; document.getElementById('descPreview').style.display = 'block'; document.getElementById('descPreview').innerHTML = simpleMarkdown(document.getElementById('modalDescriptionInput').value); }
+            const btnWrite = document.getElementById('btnWrite');
+            const btnPreview = document.getElementById('btnPreview');
+            const inputDesc = document.getElementById('modalDescriptionInput');
+            const divPreview = document.getElementById('descPreview');
+
+            if (mode === 'write') {
+                btnWrite.classList.add('active');
+                btnPreview.classList.remove('active');
+                inputDesc.style.display = 'block';
+                divPreview.style.display = 'none';
+            } else {
+                btnWrite.classList.remove('active');
+                btnPreview.classList.add('active');
+                inputDesc.style.display = 'none';
+                divPreview.style.display = 'block';
+                divPreview.innerHTML = simpleMarkdown(inputDesc.value);
+            }
         }
         function simpleMarkdown(text) { if (!text) return '<em style="color:var(--text-sub);">Nenhuma descrição detalhada inserida.</em>'; let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>'); return html.split('\n').join('<br>').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>'); }
 
