@@ -203,7 +203,6 @@
             background: var(--bg-card);
         }
 
-        /* --- MENU DROPDOWN (3 PONTOS) --- */
         .header-dropdown {
             position: relative;
             display: inline-block;
@@ -411,7 +410,6 @@
             color: var(--accent);
         }
 
-        /* --- AUTENTICAÇÃO E LOGIN --- */
         .login-overlay {
             position: fixed;
             inset: 0;
@@ -1102,7 +1100,6 @@
             border-color: var(--text-sub);
         }
 
-        /* --- NOVO: CHECKBOX RÁPIDO DO CARD INDEPENDENTE --- */
         .card-quick-check {
             position: absolute;
             top: 12px;
@@ -1772,9 +1769,6 @@
             border-color: var(--accent) !important;
         }
 
-        /* ========================================================= */
-        /* VISÃO GLOBAL DE PORTFÓLIO (TERMÔMETRO)                    */
-        /* ========================================================= */
         .portfolio-view {
             padding: 24px 2.5rem;
             overflow-y: auto;
@@ -2034,7 +2028,6 @@
             border: 1px solid rgba(113, 113, 122, 0.3);
         }
 
-        /* --- CSS DO TOGGLE --- */
         .toggle-calc {
             display: inline-flex;
             align-items: center;
@@ -2385,8 +2378,6 @@
                         style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
                         <label style="margin:0;">Descrição (Markdown Ativo ✨)</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button type="button" class="btn-mic-small"
-                                onclick="startVoice('modalDescriptionInput', this)" id="descMicBtn">🎙️ Ditar</button>
                             <div class="tab-buttons-small">
                                 <button type="button" class="tab-btn-small active" onclick="switchDescTab('write')"
                                     id="btnWrite">✏️ Escrever</button>
@@ -2804,9 +2795,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <script>
-        // ============================================
-        // FUNÇÕES UTILITÁRIAS GLOBAIS
-        // ============================================
         function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 
         function formatDate(s) {
@@ -2822,9 +2810,6 @@
             return text.toString().replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
         }
 
-        // ============================================
-        // LOGICA DO MENU 3 PONTOS (DROPDOWN CABEÇALHO E COLUNA)
-        // ============================================
         function toggleHeaderMenu(e) {
             e.stopPropagation();
             document.querySelectorAll('.col-menu').forEach(m => m.classList.remove('active'));
@@ -2858,9 +2843,6 @@
             });
         });
 
-        // ============================================
-        // LOGICA DE AUTENTICAÇÃO
-        // ============================================
         function switchAuthView(view) {
             document.getElementById('boxLogin').style.display = 'none';
             document.getElementById('boxRegister').style.display = 'none';
@@ -2878,9 +2860,6 @@
             }
         }
 
-        // ============================================
-        // CONFIGURAÇÃO DO FIREBASE
-        // ============================================
         const firebaseConfig = {
             apiKey: "AIzaSyDyWy1LpQesOhWCZhx1eB2xUJckuJyb7aU",
             authDomain: "gerenciador-de-sprint-pro.firebaseapp.com",
@@ -3234,7 +3213,6 @@
                 if (!t.assignees) {
                     t.assignees = t.assignee ? [t.assignee] : [];
                 }
-                // Assegurar a conversão antiga se não tiver isDone definido
                 if (t.isDone === undefined) {
                     t.isDone = false;
                 }
@@ -3347,11 +3325,11 @@
 
             let initCols = [];
             if (type === 'sprint') {
-                initCols = [{ id: 'col-1', title: 'Backlog', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Em Dev', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Code Review', autoDone: false, autoAssign: false }, { id: 'col-4', title: 'Deploy / Concluído', autoDone: true, autoAssign: false }];
+                initCols = [{ id: 'col-1', title: 'Backlog', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Em Dev', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Code Review', autoDone: false, autoAssign: false }, { id: 'col-4', title: 'Deploy', autoDone: true, autoAssign: false }];
             } else if (type === 'evento') {
                 initCols = [{ id: 'col-1', title: 'Planejamento', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Pendências', autoDone: false, autoAssign: false }, { id: 'col-3', title: 'Em Execução', autoDone: false, autoAssign: true }, { id: 'col-4', title: 'Finalizado', autoDone: true, autoAssign: false }];
             } else {
-                initCols = [{ id: 'col-1', title: 'A Fazer', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Fazendo', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Concluído', autoDone: true, autoAssign: false }];
+                initCols = [{ id: 'col-1', title: 'A Fazer', autoDone: false, autoAssign: false }, { id: 'col-2', title: 'Fazendo', autoDone: false, autoAssign: true }, { id: 'col-3', title: 'Aprovado', autoDone: true, autoAssign: false }];
             }
 
             const newId = 'board-' + Date.now();
@@ -3530,7 +3508,7 @@
                     card.className = `card ${isDoneCol ? 'finalizado' : ''}`; card.id = t.id;
 
                     card.onclick = (e) => {
-                        if (!e.target.classList.contains('card-cover')) {
+                        if (!e.target.classList.contains('card-cover') && !e.target.classList.contains('card-quick-check')) {
                             openModal(t.id);
                         }
                     };
@@ -3608,7 +3586,6 @@
                                 if (!task.history) task.history = [];
                                 task.history.unshift({ date: new Date().toISOString(), user: currentUser.email, action: `Moveu para "${targetCol?.title}"` });
 
-                                // AUTOMAÇÕES DE COLUNA
                                 if (targetCol) {
                                     if (targetCol.autoDone && !task.isDone) {
                                         task.isDone = true;
@@ -3738,7 +3715,7 @@
             renderSubtasksList();
             renderCommentsList();
             renderHistory();
-            switchDescTab('preview');
+            switchDescTab('write');
             switchBottomTab('comments');
             modal.classList.add('active');
         }
@@ -3752,6 +3729,16 @@
         async function saveTaskBtnClick() {
             const text = document.getElementById('modalTaskInput').value.trim();
             if (!text) { await showSysAlert("O Título da tarefa é obrigatório."); return; }
+
+            const btn = document.getElementById('modalSaveBtn');
+            const cancelBtn = document.querySelector('.modal-actions .btn-secondary');
+            const originalText = btn.innerText;
+
+            btn.innerText = 'Salvando... ⏳';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'wait';
+            if (cancelBtn) cancelBtn.style.pointerEvents = 'none';
 
             const tagSelectVal = document.getElementById('modalTagInput').value;
             const tagObj = tags.find(t => t.name === tagSelectVal) || { name: tagSelectVal, color: '#3b82f6' };
@@ -3779,7 +3766,6 @@
                     if (JSON.stringify(oldAssignees.sort()) !== JSON.stringify(newTaskData.assignees.sort())) {
                         addHistoryLog(`Atualizou os responsáveis`);
                     }
-                    // Preserve isDone status when editing
                     newTaskData.isDone = tasks[i].isDone || false;
                     tasks[i] = { ...tasks[i], ...newTaskData };
                 }
@@ -3787,13 +3773,27 @@
                 newTaskData.id = 'id-' + Date.now();
                 newTaskData.status = currentTargetColumn || (columns.length > 0 ? columns[0].id : 'todo');
                 newTaskData.history = [{ date: new Date().toISOString(), user: currentUser.email, action: 'Criou a tarefa' }];
-                newTaskData.isDone = false; // New tasks are explicitly not done
+                newTaskData.isDone = false;
 
                 tasks.unshift(newTaskData);
             }
 
             save();
-            closeModal();
+
+            setTimeout(() => {
+                btn.innerText = 'Sucesso! ✅';
+                btn.style.background = '#10b981';
+
+                setTimeout(() => {
+                    closeModal();
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                    btn.style.background = '';
+                    if (cancelBtn) cancelBtn.style.pointerEvents = 'auto';
+                }, 700);
+            }, 600);
         }
 
         async function deleteTaskFromModal() {
@@ -4135,7 +4135,6 @@
             document.getElementById('kpi-avg').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%';
 
             const textColor = theme === 'dark' ? '#e6edf3' : '#18181b';
-            const chartColors = ['#ff6900', '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4'];
 
             if (tagsChartInstance) tagsChartInstance.destroy();
             tagsChartInstance = new Chart(document.getElementById('tagsChart'), {
@@ -4278,9 +4277,6 @@
         function startTimer() { requestNotificationPermission(); if (isTimerRunning) return; isTimerRunning = true; timerInterval = setInterval(() => { timerSeconds--; document.getElementById('pomodoroTimer').innerText = `${Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:${(timerSeconds % 60).toString().padStart(2, '0')}`; if (timerSeconds <= 0) { clearInterval(timerInterval); isTimerRunning = false; triggerNotification("Pomodoro!", "Tempo esgotado."); showSysAlert("Pomodoro: Tempo esgotado!"); timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; } }, 1000); }
         function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
 
-        // ============================================
-        // GANTT
-        // ============================================
         let ganttChart = null;
 
         function renderGantt() {
@@ -4308,27 +4304,13 @@
                 }
 
                 let safeEndStr = endD.toISOString().split('T')[0];
+                let progress = t.isDone ? 100 : 0;
 
-                let progress = 0;
-
-                if (t.isDone) {
-                    progress = 100;
-                } else if (t.subtasks && t.subtasks.length > 0) {
-                    let p = Math.round((t.subtasks.filter(s => s.done).length / t.subtasks.length) * 100);
-                    progress = isNaN(p) ? 0 : p;
-                }
-
-                return {
-                    id: t.id,
-                    name: t.text || 'Tarefa sem título',
-                    start: startStr,
-                    end: safeEndStr,
-                    progress: progress,
-                };
+                return { id: t.id, name: t.text || 'Tarefa', start: startStr, end: safeEndStr, progress: progress };
             });
 
             if (ganttTasks.length === 0) {
-                wrapper.innerHTML = '<div style="color: var(--text-sub); text-align: center; margin-top: 50px; font-weight: 600;">⚠️ Nenhuma tarefa com "Data de Início" definida ou compatível com os filtros atuais.<br><br>Defina as datas nos cards para gerar o gráfico.</div>';
+                wrapper.innerHTML = '<div style="color: var(--text-sub); text-align: center; margin-top: 50px; font-weight: 600;">⚠️ Nenhuma tarefa compatível.</div>';
                 ganttChart = null;
                 return;
             }
@@ -4337,418 +4319,68 @@
 
             try {
                 ganttChart = new Gantt("#gantt", ganttTasks, {
-                    header_height: 50,
-                    column_width: 30,
-                    step: 24,
-                    view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'],
-                    bar_height: 28,
-                    bar_corner_radius: 8,
-                    arrow_curve: 5,
-                    padding: 18,
-                    view_mode: 'Day',
-                    date_format: 'YYYY-MM-DD',
-                    language: 'en',
+                    header_height: 50, column_width: 30, step: 24, view_modes: ['Quarter Day', 'Half Day', 'Day', 'Week', 'Month'], bar_height: 28, bar_corner_radius: 8, arrow_curve: 5, padding: 18, view_mode: 'Day', date_format: 'YYYY-MM-DD', language: 'en',
                     on_date_change: function (task, start, end) {
                         const tIndex = tasks.findIndex(t => t.id === task.id);
                         if (tIndex > -1) {
-                            const formatDt = (dt) => {
-                                const tzOffset = dt.getTimezoneOffset() * 60000;
-                                return new Date(dt.getTime() - tzOffset).toISOString().split('T')[0];
-                            };
-
-                            tasks[tIndex].startDate = formatDt(start);
-                            tasks[tIndex].endDate = formatDt(end);
-
-                            if (!tasks[tIndex].history) tasks[tIndex].history = [];
-                            tasks[tIndex].history.unshift({
-                                date: new Date().toISOString(),
-                                user: currentUser ? currentUser.email : 'Usuário',
-                                action: 'Alterou prazos pelo Cronograma'
-                            });
+                            const formatDt = (dt) => new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+                            tasks[tIndex].startDate = formatDt(start); tasks[tIndex].endDate = formatDt(end);
                             syncToFirebase();
                         }
                     },
-                    on_click: function (task) {
-                        openModal(task.id);
-                    }
+                    on_click: function (task) { openModal(task.id); }
                 });
-            } catch (error) {
-                console.error("Erro interno do Gantt:", error);
-                wrapper.innerHTML = `<div style="color: #ef4444; text-align: center; margin-top: 50px;">Ocorreu um erro ao montar o gráfico. Erro: ${error.message}</div>`;
-            }
+            } catch (error) { console.error(error); }
         }
 
-        function changeGanttZoom(mode) {
-            if (ganttChart) {
-                ganttChart.change_view_mode(mode);
-                const buttons = document.querySelectorAll('.gantt-controls button');
-                buttons.forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-            }
-        }
+        function changeGanttZoom(mode) { if (ganttChart) { ganttChart.change_view_mode(mode); document.querySelectorAll('.gantt-controls button').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); } }
 
-        // ============================================
-        // WHITEBOARD (COM FIREBASE SYNC)
-        // ============================================
-        let draggedStickyId = null;
-        let offset = [0, 0];
-
-        function zoomWhiteboard(delta) {
-            currentZoom += delta;
-            if (currentZoom < 0.3) currentZoom = 0.3;
-            if (currentZoom > 3) currentZoom = 3;
-
-            document.getElementById('whiteboardCanvas').style.transform = `scale(${currentZoom})`;
-            document.getElementById('zoomDisplay').innerText = Math.round(currentZoom * 100) + '%';
-        }
-
-        function changeStickyColor(id, color) {
-            const note = stickyNotes.find(n => n.id === id);
-            if (note) {
-                note.color = color;
-                document.getElementById(id).style.background = color;
-                syncToFirebase();
-            }
-        }
-
+        let draggedStickyId = null; let offset = [0, 0];
+        function zoomWhiteboard(delta) { currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta)); document.getElementById('whiteboardCanvas').style.transform = `scale(${currentZoom})`; document.getElementById('zoomDisplay').innerText = Math.round(currentZoom * 100) + '%'; }
+        function changeStickyColor(id, color) { const n = stickyNotes.find(x => x.id === id); if (n) { n.color = color; document.getElementById(id).style.background = color; syncToFirebase(); } }
         function renderWhiteboard() {
-            const canvas = document.getElementById('whiteboardCanvas');
-            canvas.innerHTML = '';
-
-            const palette = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
-
-            stickyNotes.forEach(note => {
-                const sticky = document.createElement('div');
-                sticky.className = 'sticky-note';
-                sticky.id = note.id;
-                sticky.draggable = true;
-                sticky.style.left = note.left;
-                sticky.style.top = note.top;
-                sticky.style.background = note.color;
-
-                let colorsHtml = palette.map(c =>
-                    `<div class="color-dot" style="background: ${c}" onclick="changeStickyColor('${note.id}', '${c}')"></div>`
-                ).join('');
-
-                sticky.innerHTML = `
-            <div class="sticky-header">
-                <div class="sticky-colors">${colorsHtml}</div>
-                <button type="button" class="sticky-delete" onclick="deleteSticky('${note.id}')" title="Excluir">✖</button>
-            </div>
-            <textarea class="sticky-content" placeholder="Digite sua ideia..." onchange="updateStickyText('${note.id}', this.value)">${escapeHtml(note.text || '')}</textarea>
-        `;
-
-                sticky.addEventListener('dragstart', (e) => {
-                    draggedStickyId = note.id;
-                    const rect = sticky.getBoundingClientRect();
-                    offset = [(e.clientX - rect.left) / currentZoom, (e.clientY - rect.top) / currentZoom];
-                    e.dataTransfer.effectAllowed = "move";
-                    e.stopPropagation();
-                });
-
-                canvas.appendChild(sticky);
+            const c = document.getElementById('whiteboardCanvas'); c.innerHTML = '';
+            stickyNotes.forEach(n => {
+                const s = document.createElement('div'); s.className = 'sticky-note'; s.id = n.id; s.draggable = true; s.style.left = n.left; s.style.top = n.top; s.style.background = n.color;
+                s.innerHTML = `<div class="sticky-header"><div class="sticky-colors">${['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'].map(col => `<div class="color-dot" style="background: ${col}" onclick="changeStickyColor('${n.id}', '${col}')"></div>`).join('')}</div><button type="button" class="sticky-delete" onclick="deleteSticky('${n.id}')">✖</button></div><textarea class="sticky-content" placeholder="Ideia..." onchange="updateStickyText('${n.id}', this.value)">${escapeHtml(n.text || '')}</textarea>`;
+                s.addEventListener('dragstart', (e) => { draggedStickyId = n.id; const r = s.getBoundingClientRect(); offset = [(e.clientX - r.left) / currentZoom, (e.clientY - r.top) / currentZoom]; e.stopPropagation(); });
+                c.appendChild(s);
             });
         }
-
-        function addStickyNote() {
-            const wbContainer = document.getElementById('whiteboardMain');
-            let sl = wbContainer.scrollLeft;
-            let st = wbContainer.scrollTop;
-
-            const colors = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#fed7aa'];
-
-            const newNote = {
-                id: 'sticky-' + Date.now(),
-                text: '',
-                left: (sl / currentZoom + Math.random() * 100 + 50) + 'px',
-                top: (st / currentZoom + Math.random() * 100 + 50) + 'px',
-                color: colors[Math.floor(Math.random() * colors.length)]
-            };
-
-            stickyNotes.push(newNote);
-            renderWhiteboard();
-            syncToFirebase();
-        }
-
-        function deleteSticky(id) {
-            stickyNotes = stickyNotes.filter(n => n.id !== id);
-            renderWhiteboard();
-            syncToFirebase();
-        }
-
-        function updateStickyText(id, text) {
-            const note = stickyNotes.find(n => n.id === id);
-            if (note) {
-                note.text = text;
-                syncToFirebase();
-            }
-        }
-
+        function addStickyNote() { const wb = document.getElementById('whiteboardMain'); stickyNotes.push({ id: 'sticky-' + Date.now(), text: '', left: (wb.scrollLeft / currentZoom + 100) + 'px', top: (wb.scrollTop / currentZoom + 100) + 'px', color: '#fef08a' }); renderWhiteboard(); syncToFirebase(); }
+        function deleteSticky(id) { stickyNotes = stickyNotes.filter(n => n.id !== id); renderWhiteboard(); syncToFirebase(); }
+        function updateStickyText(id, t) { const n = stickyNotes.find(x => x.id === id); if (n) { n.text = t; syncToFirebase(); } }
         function allowDrop(e) { e.preventDefault(); }
+        function dropSticky(e) { e.preventDefault(); if (draggedStickyId) { const cr = document.getElementById('whiteboardCanvas').getBoundingClientRect(); const n = stickyNotes.find(x => x.id === draggedStickyId); if (n) { n.left = (e.clientX - cr.left) / currentZoom - offset[0] + 'px'; n.top = (e.clientY - cr.top) / currentZoom - offset[1] + 'px'; syncToFirebase(); renderWhiteboard(); } draggedStickyId = null; } }
+        function clearWhiteboard() { showSysConfirm("Limpar quadro branco?").then(ok => { if (ok) { stickyNotes = []; renderWhiteboard(); syncToFirebase(); } }); }
 
-        function dropSticky(e) {
-            e.preventDefault();
-            if (draggedStickyId) {
-                const canvasRect = document.getElementById('whiteboardCanvas').getBoundingClientRect();
+        const wb = document.getElementById('whiteboardMain'); let isP = false, sX, sY, sL, sT;
+        wb.addEventListener('mousedown', (e) => { if (e.target.id === 'whiteboardCanvas' || e.target.id === 'whiteboardMain') { isP = true; sX = e.pageX - wb.offsetLeft; sY = e.pageY - wb.offsetTop; sL = wb.scrollLeft; sT = wb.scrollTop; } });
+        wb.addEventListener('mouseleave', () => isP = false); wb.addEventListener('mouseup', () => isP = false);
+        wb.addEventListener('mousemove', (e) => { if (!isP) return; e.preventDefault(); wb.scrollLeft = sL - (e.pageX - wb.offsetLeft - sX); wb.scrollTop = sT - (e.pageY - wb.offsetTop - sY); });
 
-                let x = (e.clientX - canvasRect.left) / currentZoom - offset[0];
-                let y = (e.clientY - canvasRect.top) / currentZoom - offset[1];
+        document.addEventListener('DOMContentLoaded', () => { document.body.setAttribute('data-theme', theme); applyBackground(currentBg); switchMainView('board'); });
 
-                const noteIndex = stickyNotes.findIndex(n => n.id === draggedStickyId);
-                if (noteIndex > -1) {
-                    stickyNotes[noteIndex].left = x + 'px';
-                    stickyNotes[noteIndex].top = y + 'px';
-
-                    const domEl = document.getElementById(draggedStickyId);
-                    if (domEl) {
-                        domEl.style.left = stickyNotes[noteIndex].left;
-                        domEl.style.top = stickyNotes[noteIndex].top;
-                    }
-                    syncToFirebase();
-                }
-                draggedStickyId = null;
-            }
-        }
-
-        function clearWhiteboard() {
-            showSysConfirm("Limpar todo o quadro branco?").then(ok => {
-                if (ok) {
-                    stickyNotes = [];
-                    renderWhiteboard();
-                    syncToFirebase();
-                }
-            });
-        }
-
-        const wbContainer = document.getElementById('whiteboardMain');
-        let isPanning = false, startPanX, startPanY, scrollLeft, scrollTop;
-
-        wbContainer.addEventListener('mousedown', (e) => {
-            if (e.target.id === 'whiteboardCanvas' || e.target.id === 'whiteboardMain') {
-                isPanning = true;
-                startPanX = e.pageX - wbContainer.offsetLeft;
-                startPanY = e.pageY - wbContainer.offsetTop;
-                scrollLeft = wbContainer.scrollLeft;
-                scrollTop = wbContainer.scrollTop;
-            }
-        });
-
-        wbContainer.addEventListener('mouseleave', () => { isPanning = false; });
-        wbContainer.addEventListener('mouseup', () => { isPanning = false; });
-        wbContainer.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            e.preventDefault();
-            const x = e.pageX - wbContainer.offsetLeft;
-            const y = e.pageY - wbContainer.offsetTop;
-            wbContainer.scrollLeft = scrollLeft - (x - startPanX);
-            wbContainer.scrollTop = scrollTop - (y - startPanY);
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.body.setAttribute('data-theme', theme);
-            applyBackground(currentBg);
-            window.addEventListener('paste', handlePaste);
-            switchMainView('board');
-        });
-
-
-        // ============================================
-        // VISÃO GLOBAL DE PORTFÓLIO (TERMÔMETRO REAL)
-        // ============================================
-
+        function toggleBoardPortfolioStatus(bId) { if (!allBoardsData[bId]) return; allBoardsData[bId].excludeFromPortfolio = !allBoardsData[bId].excludeFromPortfolio; db.collection('boards').doc(bId).set({ excludeFromPortfolio: allBoardsData[bId].excludeFromPortfolio }, { merge: true }); renderPortfolio(); }
         function renderPortfolio() {
-            const grid = document.getElementById('portfolioGrid');
-            if (!grid) return;
-
-            if (!allBoardsData || Object.keys(allBoardsData).length === 0) {
-                grid.innerHTML = '<div style="color: var(--text-sub); text-align: center; padding: 40px; grid-column: 1/-1;">Nenhum quadro disponível. Crie um quadro para ver o progresso global.</div>';
-                document.getElementById("portGeneralPercent").textContent = "0%";
-                document.getElementById("portGeneralFill").style.width = "0%";
-                return;
-            }
-
-            let totalGlobalTasks = 0;
-            let totalGlobalDone = 0;
-            const boardsAnalysis = [];
-
+            const grid = document.getElementById('portfolioGrid'); if (!grid || !allBoardsData) return;
+            let tot = 0, done = 0; const list = [];
             Object.keys(allBoardsData).forEach(bId => {
-                const bData = allBoardsData[bId];
-                const bTasks = bData.tasks || [];
-                const bCols = bData.columns || [];
-                const isExcluded = bData.excludeFromPortfolio || false;
-
-                const todoColId = bCols.length > 0 ? bCols[0].id : 'todo';
-
-                let boardDoneTasks = 0;
-                bTasks.forEach(t => {
-                    if (t.isDone) boardDoneTasks++;
-                });
-
-                if (!isExcluded) {
-                    totalGlobalTasks += bTasks.length;
-                    totalGlobalDone += boardDoneTasks;
-                }
-
-                boardsAnalysis.push({
-                    bId,
-                    bTitle: boards.find(b => b.id === bId)?.title || 'Quadro Desconhecido',
-                    bTasks,
-                    bCols,
-                    todoColId,
-                    boardDoneTasks,
-                    pct: bTasks.length > 0 ? Math.round((boardDoneTasks / bTasks.length) * 100) : 0,
-                    isExcluded
-                });
+                const bTasks = allBoardsData[bId].tasks || []; const isEx = allBoardsData[bId].excludeFromPortfolio || false;
+                let bdDone = bTasks.filter(t => t.isDone).length;
+                if (!isEx) { tot += bTasks.length; done += bdDone; }
+                list.push({ bId, title: boards.find(b => b.id === bId)?.title || 'Quadro', bTasks, todoCol: allBoardsData[bId].columns?.[0]?.id || 'todo', bdDone, pct: bTasks.length ? Math.round((bdDone / bTasks.length) * 100) : 0, isEx });
             });
-
-            const globalPct = totalGlobalTasks > 0 ? Math.round((totalGlobalDone / totalGlobalTasks) * 100) : 0;
-
-            grid.innerHTML = "";
-
-            boardsAnalysis.sort((a, b) => {
-                if (a.isExcluded && !b.isExcluded) return 1;
-                if (!a.isExcluded && b.isExcluded) return -1;
-                return b.pct - a.pct;
-            }).forEach(board => {
-
-                const diff = board.pct - globalPct;
-                let thermoClass = 'yellow';
-                let thermoText = '🟡 No Ritmo';
-                let thermoColor = '#f59e0b';
-
-                if (board.isExcluded) {
-                    thermoClass = 'gray';
-                    thermoText = '⏸️ Ignorado';
-                    thermoColor = 'var(--text-sub)';
-                } else if (board.bTasks.length === 0) {
-                    thermoClass = 'gray';
-                    thermoText = '⚪ Vazio';
-                    thermoColor = 'var(--text-sub)';
-                } else if (diff <= -12) {
-                    thermoClass = 'red';
-                    thermoText = '🔴 Atrasado';
-                    thermoColor = '#ef4444';
-                } else if (diff >= 12) {
-                    thermoClass = 'green';
-                    thermoText = '🟢 Adiantado';
-                    thermoColor = '#10b981';
-                }
-
-                const tasksHtml = board.bTasks.map(t => {
-                    const isDone = t.isDone;
-                    const tagColor = t.tag?.color || 'var(--accent)';
-                    const tagName = t.tag?.name || (typeof t.tag === 'string' ? t.tag : '');
-
-                    return `
-                <div class="port-task-item ${isDone ? "done" : ""}">
-                    <button type="button" class="port-check" onclick="togglePortfolioTask('${board.bId}', '${t.id}')" title="${isDone ? 'Desmarcar' : 'Marcar como concluído'}">
-                        ${isDone ? "✓" : ""}
-                    </button>
-                    <div class="port-task-content">
-                        <span class="port-task-name">${escapeHtml(t.text)}</span>
-                        ${tagName ? `<span class="port-task-meta"><span style="width:8px;height:8px;border-radius:50%;background:${tagColor};"></span>${tagName}</span>` : ''}
-                    </div>
-                </div>
-            `;
-                }).join('');
-
-                const card = document.createElement("div");
-                card.className = `port-card ${board.isExcluded ? 'excluded' : ''}`;
-                card.style.borderColor = board.isExcluded ? 'var(--border)' : `color-mix(in srgb, ${thermoColor} 50%, var(--border))`;
-
-                card.innerHTML = `
-            <div class="port-card-header">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px;">
-                    <h3 class="port-card-title" style="margin:0;">
-                        <span style="cursor:pointer; display:flex; align-items:center; gap:8px;" onclick="switchBoard('${board.bId}')" title="Abrir quadro">
-                            ${escapeHtml(board.bTitle)} ↗
-                            <span class="thermo-badge ${thermoClass}">${thermoText}</span>
-                        </span>
-                    </h3>
-                    <div class="toggle-calc ${!board.isExcluded ? 'active' : ''}" onclick="toggleBoardPortfolioStatus('${board.bId}')" title="${board.isExcluded ? 'Incluir no cálculo global' : 'Ignorar quadro no cálculo'}">
-                        <span class="mobile-hide">Cálculo</span>
-                        <div class="toggle-switch"></div>
-                    </div>
-                </div>
-                <div class="port-progress-bg">
-                    <div class="port-progress-fill" style="width: ${board.pct}%; background: ${thermoColor};"></div>
-                </div>
-                <div class="port-stats">
-                    <span>${board.boardDoneTasks} de ${board.bTasks.length} concluídas</span>
-                    <span style="color: ${thermoColor}; font-weight: 800;">${board.pct}%</span>
-                </div>
-            </div>
-            <div class="port-tasks">
-                ${tasksHtml || '<span style="font-size:12px; color:var(--text-sub);">Nenhuma tarefa neste quadro.</span>'}
-            </div>
-            <form class="port-add-form" onsubmit="addPortfolioTask(event, '${board.bId}', '${board.todoColId}')">
-                <input class="port-input" placeholder="Adicionar tarefa rápida..." required maxlength="80" ${board.isExcluded ? 'disabled' : ''}>
-                <button type="button" class="port-btn-add" type="submit" ${board.isExcluded ? 'disabled style="opacity:0.5;"' : ''}>+</button>
-            </form>
-        `;
-
-                grid.appendChild(card);
+            const gPct = tot ? Math.round((done / tot) * 100) : 0; grid.innerHTML = '';
+            list.sort((a, b) => (a.isEx === b.isEx) ? b.pct - a.pct : a.isEx ? 1 : -1).forEach(b => {
+                const diff = b.pct - gPct; let col = '#f59e0b', txt = '🟡 No Ritmo';
+                if (b.isEx) { col = 'var(--text-sub)'; txt = '⏸️ Ignorado'; } else if (!b.bTasks.length) { col = 'var(--text-sub)'; txt = '⚪ Vazio'; } else if (diff <= -12) { col = '#ef4444'; txt = '🔴 Atrasado'; } else if (diff >= 12) { col = '#10b981'; txt = '🟢 Adiantado'; }
+                grid.innerHTML += `<div class="port-card ${b.isEx ? 'excluded' : ''}" style="border-color: ${b.isEx ? 'var(--border)' : col}"><div class="port-card-header"><div style="display:flex; justify-content:space-between; margin-bottom:12px;"><h3 style="margin:0;"><span style="cursor:pointer;" onclick="switchBoard('${b.bId}')">${escapeHtml(b.title)} ↗ <span class="thermo-badge" style="color:${col}">${txt}</span></span></h3><div class="toggle-calc ${!b.isEx ? 'active' : ''}" onclick="toggleBoardPortfolioStatus('${b.bId}')">Cálculo <div class="toggle-switch"></div></div></div><div class="port-progress-bg"><div class="port-progress-fill" style="width:${b.pct}%; background:${col}"></div></div><div class="port-stats"><span>${b.bdDone}/${b.bTasks.length} concluídas</span><b style="color:${col}">${b.pct}%</b></div></div><div class="port-tasks">${b.bTasks.map(t => `<div class="port-task-item ${t.isDone ? 'done' : ''}"><button type="button" class="port-check" onclick="togglePortfolioTask('${b.bId}', '${t.id}')">${t.isDone ? '✓' : ''}</button><span class="port-task-name">${escapeHtml(t.text)}</span></div>`).join('') || '<small>Vazio</small>'}</div><form class="port-add-form" onsubmit="addPortfolioTask(event, '${b.bId}', '${b.todoCol}')"><input class="port-input" placeholder="Nova tarefa..." required ${b.isEx ? 'disabled' : ''}><button type="button" class="port-btn-add" type="submit" ${b.isEx ? 'disabled' : ''}>+</button></form></div>`;
             });
-
-            document.getElementById("portGeneralPercent").textContent = `${globalPct}%`;
-            document.getElementById("portGeneralFill").style.width = `${globalPct}%`;
+            document.getElementById('portGeneralPercent').innerText = gPct + '%'; document.getElementById('portGeneralFill').style.width = gPct + '%';
         }
-
-        function togglePortfolioTask(boardId, taskId) {
-            if (!allBoardsData[boardId]) return;
-            if (allBoardsData[boardId].excludeFromPortfolio) return;
-
-            const bTasks = allBoardsData[boardId].tasks;
-            const taskIndex = bTasks.findIndex(t => t.id === taskId);
-
-            if (taskIndex > -1) {
-                bTasks[taskIndex].isDone = !bTasks[taskIndex].isDone;
-
-                if (bTasks[taskIndex].isDone) {
-                    bTasks[taskIndex].endDate = getTodayString();
-                    fireConfetti();
-                }
-
-                if (!bTasks[taskIndex].history) bTasks[taskIndex].history = [];
-                const msg = bTasks[taskIndex].isDone ? 'Concluiu' : 'Marcou como pendente';
-                bTasks[taskIndex].history.unshift({
-                    date: new Date().toISOString(),
-                    user: currentUser ? currentUser.email : 'Termômetro Global',
-                    action: `${msg} via Termômetro Geral`
-                });
-
-                syncSpecificBoardToFirebase(boardId);
-                renderPortfolio();
-            }
-        }
-
-        function addPortfolioTask(event, boardId, firstColId) {
-            event.preventDefault();
-            const input = event.target.querySelector('input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (!allBoardsData[boardId]) return;
-
-            const newTask = {
-                id: 'id-' + Date.now(),
-                text: text,
-                status: firstColId,
-                priority: 'Média',
-                isDone: false,
-                history: [{
-                    date: new Date().toISOString(),
-                    user: currentUser ? currentUser.email : 'Termômetro Global',
-                    action: 'Criou a tarefa via Termômetro Geral'
-                }]
-            };
-
-            allBoardsData[boardId].tasks.unshift(newTask);
-            input.value = '';
-
-            syncSpecificBoardToFirebase(boardId);
-            renderPortfolio();
-        }
+        function togglePortfolioTask(bId, tId) { if (allBoardsData[bId]?.excludeFromPortfolio) return; const t = allBoardsData[bId].tasks.find(x => x.id === tId); if (t) { t.isDone = !t.isDone; syncSpecificBoardToFirebase(bId); renderPortfolio(); } }
+        function addPortfolioTask(e, bId, col) { e.preventDefault(); const i = e.target.querySelector('input'); if (i.value.trim() && allBoardsData[bId]) { allBoardsData[bId].tasks.unshift({ id: 'id-' + Date.now(), text: i.value.trim(), status: col, priority: 'Média', isDone: false }); i.value = ''; syncSpecificBoardToFirebase(bId); renderPortfolio(); } }
     </script>
 </body>
 
