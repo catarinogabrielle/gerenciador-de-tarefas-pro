@@ -410,6 +410,7 @@
             color: var(--accent);
         }
 
+        /* --- AUTENTICAÇÃO E LOGIN --- */
         .login-overlay {
             position: fixed;
             inset: 0;
@@ -1100,6 +1101,7 @@
             border-color: var(--text-sub);
         }
 
+        /* --- CHECKBOX RÁPIDO DO CARD INDEPENDENTE --- */
         .card-quick-check {
             position: absolute;
             top: 12px;
@@ -1769,6 +1771,9 @@
             border-color: var(--accent) !important;
         }
 
+        /* ========================================================= */
+        /* VISÃO GLOBAL DE PORTFÓLIO (TERMÔMETRO)                    */
+        /* ========================================================= */
         .portfolio-view {
             padding: 24px 2.5rem;
             overflow-y: auto;
@@ -2028,6 +2033,7 @@
             border: 1px solid rgba(113, 113, 122, 0.3);
         }
 
+        /* --- CSS DO TOGGLE --- */
         .toggle-calc {
             display: inline-flex;
             align-items: center;
@@ -2346,20 +2352,18 @@
                 <h3 id="modalTitle" style="margin:0;">Nova Tarefa</h3>
             </div>
 
-            <div class="modal-content-scroll">
+            <div class="modal-content-scroll" tabindex="0">
 
                 <div class="form-group">
                     <label>Título da Tarefa</label>
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="modalTaskInput" class="input-main"
                             placeholder="Ex: Criar tela de login..." autofocus>
-                        <button type="button" class="btn-mic" onclick="startVoice('modalTaskInput', this)"
-                            title="Ditar título">🎙️</button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>Capa Visual</label>
+                    <label>Capa Visual (Clique ou cole com Ctrl+V)</label>
                     <div class="cover-upload-area" id="coverUploadArea"
                         onclick="document.getElementById('fileCoverInput').click()">
                         <span id="coverPlaceholder">📁 Clique para enviar ou Cole (Ctrl+V) uma imagem</span>
@@ -2795,6 +2799,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/frappe-gantt/0.6.1/frappe-gantt.min.js"></script>
     <script>
+        // ============================================
+        // FUNÇÕES UTILITÁRIAS GLOBAIS
+        // ============================================
         function getTodayString() { return new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]; }
 
         function formatDate(s) {
@@ -2810,6 +2817,9 @@
             return text.toString().replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char] || char));
         }
 
+        // ============================================
+        // LOGICA DO MENU 3 PONTOS (DROPDOWN CABEÇALHO E COLUNA)
+        // ============================================
         function toggleHeaderMenu(e) {
             e.stopPropagation();
             document.querySelectorAll('.col-menu').forEach(m => m.classList.remove('active'));
@@ -2843,6 +2853,9 @@
             });
         });
 
+        // ============================================
+        // LOGICA DE AUTENTICAÇÃO
+        // ============================================
         function switchAuthView(view) {
             document.getElementById('boxLogin').style.display = 'none';
             document.getElementById('boxRegister').style.display = 'none';
@@ -2860,6 +2873,9 @@
             }
         }
 
+        // ============================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ============================================
         const firebaseConfig = {
             apiKey: "AIzaSyDyWy1LpQesOhWCZhx1eB2xUJckuJyb7aU",
             authDomain: "gerenciador-de-sprint-pro.firebaseapp.com",
@@ -3695,8 +3711,6 @@
                 tempSubtasks = task.subtasks ? JSON.parse(JSON.stringify(task.subtasks)) : [];
                 tempComments = task.comments ? JSON.parse(JSON.stringify(task.comments)) : [];
                 tempHistory = task.history || [];
-
-                switchDescTab('preview');
             } else {
                 editingTaskId = null;
                 document.getElementById('modalTitle').innerText = "Nova Tarefa";
@@ -3711,8 +3725,6 @@
                     document.getElementById('modalTagInput').selectedIndex = 0;
                     updateColorPicker();
                 }
-
-                switchDescTab('write');
             }
 
             renderAssigneeSelect();
@@ -4232,8 +4244,47 @@
 
         function renderBoardsList() { document.getElementById('boardsList').innerHTML = boards.map(board => `<div class="board-item ${board.id === currentBoardId ? 'active' : ''}" onclick="switchBoard('${board.id}')"><span class="board-item-icon">📋</span><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${board.title}</span></div>`).join(''); }
 
-        async function startVoice(targetId, btnElement) { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return await showSysAlert("Reconhecimento de voz não suportado no seu navegador."); const recognition = new SpeechRecognition(); recognition.lang = 'pt-BR'; recognition.start(); btnElement.classList.add('recording'); const originalText = btnElement.innerText; if (btnElement.classList.contains('btn-mic-small')) btnElement.innerText = "👂..."; recognition.onresult = (evt) => { const t = evt.results[0][0].transcript; const input = document.getElementById(targetId); input.value = input.value.trim() ? input.value + " " + t : t; input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1); }; recognition.onspeechend = recognition.onerror = () => { recognition.stop(); btnElement.classList.remove('recording'); if (btnElement.classList.contains('btn-mic-small')) btnElement.innerText = originalText; }; }
-        function handlePaste(e) { if (!document.getElementById('modalOverlay').classList.contains('active')) return; if (e.clipboardData && e.clipboardData.items) { for (let i = 0; i < e.clipboardData.items.length; i++) { if (e.clipboardData.items[i].type.indexOf('image') !== -1) { const blob = e.clipboardData.items[i].getAsFile(); const reader = new FileReader(); reader.onload = function (event) { compressImage(event.target.result, 800, (compressedData) => { setCoverImage(compressedData); }); }; reader.readAsDataURL(blob); e.preventDefault(); return; } } } }
+        // ============================================
+        // NOVO: SUPORTE APRIMORADO DE CTRL+V NO MODAL
+        // ============================================
+        document.addEventListener('paste', (e) => {
+            // Só funciona se o modal de tarefa estiver aberto
+            if (!document.getElementById('modalOverlay').classList.contains('active')) return;
+
+            // Ignora se o usuário estiver digitando dentro de um input ou textarea (pra não atrapalhar Ctrl+V de texto)
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                if (!e.clipboardData.items) return;
+
+                let hasImage = false;
+                for (let i = 0; i < e.clipboardData.items.length; i++) {
+                    if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
+                        hasImage = true;
+                        break;
+                    }
+                }
+                // Se for só texto, deixa colar normalmente. Se for imagem, a gente assume o controle.
+                if (!hasImage) return;
+            }
+
+            if (e.clipboardData && e.clipboardData.items) {
+                for (let i = 0; i < e.clipboardData.items.length; i++) {
+                    if (e.clipboardData.items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault(); // Previne o comportamento padrão (colar a imagem solta no HTML)
+
+                        const blob = e.clipboardData.items[i].getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            compressImage(event.target.result, 800, (compressedData) => {
+                                setCoverImage(compressedData);
+                            });
+                        };
+                        reader.readAsDataURL(blob);
+                        return;
+                    }
+                }
+            }
+        });
+
         function handleFileSelect(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function (e) { compressImage(e.target.result, 800, (compressedData) => { setCoverImage(compressedData); }); }; reader.readAsDataURL(input.files[0]); } }
         function compressImage(base64Str, maxWidth = 800, callback) { const img = new Image(); img.src = base64Str; img.onload = () => { const canvas = document.createElement('canvas'); let width = img.width; let height = img.height; if (width > maxWidth) { height = Math.round((height *= maxWidth / width)); width = maxWidth; } canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); callback(canvas.toDataURL('image/jpeg', 0.7)); }; }
         function setCoverImage(base64String) { document.getElementById('coverPreview').src = base64String; document.getElementById('coverPreview').style.display = 'block'; document.getElementById('coverPlaceholder').style.display = 'none'; document.getElementById('removeCoverBtn').style.display = 'block'; document.getElementById('modalCoverInput').value = base64String; }
@@ -4296,6 +4347,9 @@
         function startTimer() { requestNotificationPermission(); if (isTimerRunning) return; isTimerRunning = true; timerInterval = setInterval(() => { timerSeconds--; document.getElementById('pomodoroTimer').innerText = `${Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:${(timerSeconds % 60).toString().padStart(2, '0')}`; if (timerSeconds <= 0) { clearInterval(timerInterval); isTimerRunning = false; triggerNotification("Pomodoro!", "Tempo esgotado."); showSysAlert("Pomodoro: Tempo esgotado!"); timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; } }, 1000); }
         function resetTimer() { clearInterval(timerInterval); isTimerRunning = false; timerSeconds = 1500; document.getElementById('pomodoroTimer').innerText = "25:00"; }
 
+        // ============================================
+        // GANTT
+        // ============================================
         let ganttChart = null;
 
         function renderGantt() {
@@ -4374,7 +4428,11 @@
         function clearWhiteboard() { showSysConfirm("Limpar quadro branco?").then(ok => { if (ok) { stickyNotes = []; renderWhiteboard(); syncToFirebase(); } }); }
 
         const wb = document.getElementById('whiteboardMain'); let isP = false, sX, sY, sL, sT;
-        wb.addEventListener('mousedown', (e) => { if (e.target.id === 'whiteboardCanvas' || e.target.id === 'whiteboardMain') { isP = true; sX = e.pageX - wb.offsetLeft; sY = e.pageY - wb.offsetTop; sL = wb.scrollLeft; sT = wb.scrollTop; } });
+        wb.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'whiteboardCanvas' || e.target.id === 'whiteboardMain') {
+                isP = true; sX = e.pageX - wb.offsetLeft; sY = e.pageY - wb.offsetTop; sL = wb.scrollLeft; sT = wb.scrollTop;
+            }
+        });
         wb.addEventListener('mouseleave', () => isP = false); wb.addEventListener('mouseup', () => isP = false);
         wb.addEventListener('mousemove', (e) => { if (!isP) return; e.preventDefault(); wb.scrollLeft = sL - (e.pageX - wb.offsetLeft - sX); wb.scrollTop = sT - (e.pageY - wb.offsetTop - sY); });
 
@@ -4401,6 +4459,3 @@
         function togglePortfolioTask(bId, tId) { if (allBoardsData[bId]?.excludeFromPortfolio) return; const t = allBoardsData[bId].tasks.find(x => x.id === tId); if (t) { t.isDone = !t.isDone; syncSpecificBoardToFirebase(bId); renderPortfolio(); } }
         function addPortfolioTask(e, bId, col) { e.preventDefault(); const i = e.target.querySelector('input'); if (i.value.trim() && allBoardsData[bId]) { allBoardsData[bId].tasks.unshift({ id: 'id-' + Date.now(), text: i.value.trim(), status: col, priority: 'Média', isDone: false }); i.value = ''; syncSpecificBoardToFirebase(bId); renderPortfolio(); } }
     </script>
-</body>
-
-</html>
